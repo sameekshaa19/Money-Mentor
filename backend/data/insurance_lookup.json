@@ -1,0 +1,21 @@
+{
+  "description": "Health insurance premium lookup — annual premiums in INR (indicative, FY 2024-25)",
+  "family_floater": {
+    "25-35": { "3_lakh": 8500, "5_lakh": 12500, "10_lakh": 18500, "25_lakh": 32000 },
+    "36-45": { "3_lakh": 12000, "5_lakh": 17000, "10_lakh": 25000, "25_lakh": 42000 },
+    "46-55": { "3_lakh": 18000, "5_lakh": 25000, "10_lakh": 38000, "25_lakh": 62000 },
+    "56-65": { "3_lakh": 28000, "5_lakh": 40000, "10_lakh": 58000, "25_lakh": 95000 }
+  },
+  "individual": {
+    "25-35": { "3_lakh": 5000, "5_lakh": 7500, "10_lakh": 12000, "25_lakh": 22000 },
+    "36-45": { "3_lakh": 7500, "5_lakh": 11000, "10_lakh": 17000, "25_lakh": 30000 },
+    "46-55": { "3_lakh": 12000, "5_lakh": 17000, "10_lakh": 26000, "25_lakh": 45000 },
+    "56-65": { "3_lakh": 20000, "5_lakh": 28000, "10_lakh": 42000, "25_lakh": 70000 }
+  },
+  "notes": [
+    "Premiums are indicative averages across major insurers",
+    "Family floater covers self + spouse + 2 children",
+    "Age is the eldest member's age for family floater",
+    "Tax benefit under Section 80D: ₹25,000 (self) + ₹25,000 (parents, ₹50,000 if senior citizen)"
+  ]
+}

@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+backend/.venv/
+__pycache__/
+*.pyc
+
+# Environment Files
+.env
+backend/.env
+
+# IDE / OS Files
+.vscode/
+.idea/
+.DS_Store
+dist/
+build/
+.next/
+
+# Project Specific
+frontend/dist/
+backend/data/*.log
+*.pdf

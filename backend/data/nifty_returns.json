@@ -1,0 +1,12 @@
+{
+  "description": "Nifty 50 Total Returns Index — calendar year returns (%) for benchmarking",
+  "returns": {
+    "2020": 14.90,
+    "2021": 24.12,
+    "2022": 4.32,
+    "2023": 20.02,
+    "2024": 8.80
+  },
+  "cagr_5yr": 14.14,
+  "cagr_10yr": 12.25
+}
