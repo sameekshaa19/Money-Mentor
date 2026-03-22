@@ -26,7 +26,7 @@ export default function HealthScore() {
       setLoading(true);
       try {
         const res = await api.getHealthScore(user);
-        setHealthScore(res.data.data);
+        setHealthScore({ local_scores: res.data.data, ai_insights: res.data.data });
       } catch (err) {
         console.error(err);
       } finally {
@@ -43,24 +43,33 @@ export default function HealthScore() {
     fullMark: 100,
   })) || [];
 
+  const TIPS = {
+    'Emergency Fund': 'Build up 6 months of expenses in a liquid savings account or FD.',
+    'Debt-to-Income': 'Keep your total EMIs below 30% of monthly income.',
+    'Insurance Coverage': 'Get life cover of at least 10x your annual income.',
+    'Investment Diversification': 'Spread investments across equity, debt, and gold.',
+    'Savings Rate': 'Aim to save and invest at least 30% of your monthly income.',
+    'Retirement Readiness': 'Start a monthly SIP now — even ₹2,000/month makes a big difference over 20 years.',
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
       <header className="mb-10 text-center">
         <h1 className="text-4xl font-bold text-slate-900 mb-2">Financial Health Score</h1>
-        <p className="text-slate-500">A holistic checkup of your finances using rule-based math and Gemini AI insights.</p>
+        <p className="text-slate-500">A holistic checkup of your finances using rule-based math and AI insights.</p>
       </header>
 
       {!healthScore ? (
         <Card className="max-w-2xl mx-auto bg-white py-12">
           <div className="mb-10 text-center">
-             <h2 className="text-xl font-bold text-slate-800">{steps[currentStep].title}</h2>
-             <p className="text-sm text-slate-400">Step {currentStep + 1} of {steps.length}</p>
+            <h2 className="text-xl font-bold text-slate-800">{steps[currentStep].title}</h2>
+            <p className="text-sm text-slate-400">Step {currentStep + 1} of {steps.length}</p>
           </div>
           <div className="space-y-6 px-10">
             {steps[currentStep].fields.map(field => (
               <div key={field}>
                 <label className="block text-sm font-medium text-slate-700 mb-2 capitalize">
-                  {field.replace('_', ' ')} (₹)
+                  {field.replace(/_/g, ' ')} (₹)
                 </label>
                 <input
                   type="number"
@@ -71,10 +80,10 @@ export default function HealthScore() {
               </div>
             ))}
           </div>
-          <StepForm 
-            steps={steps} 
-            currentStep={currentStep} 
-            onNext={handleNext} 
+          <StepForm
+            steps={steps}
+            currentStep={currentStep}
+            onNext={handleNext}
             onPrev={() => setCurrentStep(currentStep - 1)}
             isLast={currentStep === steps.length - 1}
           />
@@ -82,41 +91,54 @@ export default function HealthScore() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           <Card title="Your Health Radar">
-            <div className="h-[400px]">
+            <div className="h-[420px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
+                <RadarChart
+                  cx="50%"
+                  cy="50%"
+                  outerRadius="55%"
+                  data={chartData}
+                  margin={{ top: 20, right: 40, bottom: 20, left: 40 }}
+                >
                   <PolarGrid />
-                  <PolarAngleAxis dataKey="subject" />
+                  <PolarAngleAxis
+                    dataKey="subject"
+                    tick={{ fontSize: 11, fill: '#475569' }}
+                  />
                   <Radar name="Score" dataKey="A" stroke="#2563eb" fill="#3b82f6" fillOpacity={0.6} />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
-            <div className="text-center mt-6">
-               <div className="text-sm text-slate-400 uppercase font-bold tracking-widest mb-1">Overall Score</div>
-               <div className="text-6xl font-black text-blue-600">{healthScore.local_scores.overall_score}</div>
+            <div className="text-center mt-2">
+              <div className="text-sm text-slate-400 uppercase font-bold tracking-widest mb-1">Overall Score</div>
+              <div className="text-6xl font-black text-blue-600">{healthScore.local_scores.overall_score}</div>
             </div>
           </Card>
 
           <div className="flex flex-col gap-6">
             <Card title="Dimension Breakdown">
-               <div className="grid grid-cols-2 gap-4">
-                  {healthScore.local_scores.dimensions.map(d => (
-                    <MetricCard 
-                      key={d.name} 
-                      label={d.name} 
-                      value={`${d.score}/100`} 
-                      color={d.status === 'good' ? 'emerald' : d.status === 'warning' ? 'amber' : 'rose'} 
-                    />
-                  ))}
-               </div>
+              <div className="grid grid-cols-2 gap-4">
+                {healthScore.local_scores.dimensions.map(d => (
+                  <MetricCard
+                    key={d.name}
+                    label={d.name}
+                    value={`${d.score}/100`}
+                    color={d.status === 'good' ? 'emerald' : d.status === 'warning' ? 'amber' : 'rose'}
+                  />
+                ))}
+              </div>
             </Card>
 
-            <Card title="Gemini Health Prescriptions">
-               <div className="space-y-4">
-                  {(healthScore.ai_insights?.dimensions || []).map((ins, idx) => (
-                    <InsightCard key={idx} insight={ins.insight} type={healthScore.local_scores.dimensions[idx]?.status === 'critical' ? 'warning' : 'info'} />
-                  ))}
-               </div>
+            <Card title="Health Prescriptions">
+              <div className="space-y-4">
+                {healthScore.local_scores.dimensions.map((d, idx) => (
+                  <InsightCard
+                    key={idx}
+                    insight={`${d.name}: ${TIPS[d.name] || 'Keep monitoring this area.'}`}
+                    type={d.status === 'critical' ? 'warning' : 'info'}
+                  />
+                ))}
+              </div>
             </Card>
           </div>
         </div>
