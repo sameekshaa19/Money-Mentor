@@ -1,21 +1,15 @@
 import { useState } from 'react'
 import axios from 'axios'
-import { Card } from '../components/ui/Card'
-import { Button } from '../components/ui/Button'
 
 const LIFE_EVENTS = [
-  { id: 'bonus', label: 'Got a Bonus', desc: 'Deploy a windfall smartly' },
-  { id: 'inheritance', label: 'Received Inheritance', desc: 'Lump sum investment strategy' },
-  { id: 'marriage', label: 'Getting Married', desc: 'Merge finances, plan together' },
-  { id: 'baby', label: 'New Baby', desc: 'Insurance, education fund, will' },
-  { id: 'job_loss', label: 'Lost My Job', desc: 'Emergency plan, cut expenses' },
-  { id: 'home', label: 'Buying a Home', desc: 'EMI impact, tax benefits, SIP cuts' },
+  { id: 'bonus',       label: 'Got a Bonus',         desc: 'Deploy a windfall smartly',               icon: 'redeem',         color: '#4af8e3', bg: 'rgba(74,248,227,0.1)' },
+  { id: 'inheritance', label: 'Received Inheritance',desc: 'Lump sum investment strategy',            icon: 'account_balance',color: '#c799ff', bg: 'rgba(199,153,255,0.1)' },
+  { id: 'marriage',    label: 'Getting Married',     desc: 'Merge finances, plan together',           icon: 'favorite',       color: '#ff6e84', bg: 'rgba(255,110,132,0.1)' },
+  { id: 'baby',        label: 'New Baby',            desc: 'Insurance, education fund, will',         icon: 'child_care',     color: '#4af8e3', bg: 'rgba(74,248,227,0.1)' },
+  { id: 'job_loss',    label: 'Lost My Job',         desc: 'Emergency plan, cut expenses',            icon: 'work_off',       color: '#ff6e84', bg: 'rgba(255,110,132,0.1)' },
+  { id: 'home',        label: 'Buying a Home',       desc: 'EMI impact, tax benefits, SIP cuts',      icon: 'home',           color: '#c799ff', bg: 'rgba(199,153,255,0.1)' },
 ]
 
-const formatINR = (n) => '\u20B9' + Number(n).toLocaleString('en-IN')
-const formatVal = (v) => typeof v === 'number' ? formatINR(v) : v
-
-// Mock profile — Day 6 this comes from Zustand store
 const MOCK_PROFILE = {
   monthly_income: 120000,
   monthly_expenses: 55000,
@@ -23,6 +17,8 @@ const MOCK_PROFILE = {
   insurance_cover: 5000000,
   emergency_fund: 180000,
 }
+
+const formatVal = (v) => typeof v === 'number' ? '₹' + Number(v).toLocaleString('en-IN') : v
 
 export default function LifeEventAdvisor() {
   const [selected, setSelected] = useState(null)
@@ -41,17 +37,15 @@ export default function LifeEventAdvisor() {
       })
       setAdvice(res.data.data)
     } catch (err) {
-      console.error('Life event API failed', err)
-      // fallback static mock
+      console.error('API failed', err)
       setAdvice({
-        before: { 'Monthly SIP': 25000, 'Emergency Fund': 180000, 'Insurance': '\u20B950L life', 'Net Worth': 850000 },
-        after:  { 'Monthly SIP': 35000, 'Emergency Fund': 300000, 'Insurance': '\u20B91Cr life',  'Net Worth': 1650000 },
+        before: { 'Monthly SIP': 25000, 'Emergency Fund': 180000, 'Insurance': 5000000, 'Net Worth': 850000 },
+        after:  { 'Monthly SIP': 35000, 'Emergency Fund': 300000, 'Insurance': 10000000, 'Net Worth': 1020000 },
         recommendations: [
-          'Increase term life cover to \u20B91 Cr immediately',
-          'Top up health insurance to \u20B910L family floater',
-          'Start \u20B95,000/mo SIP for education goal',
-          'Build emergency fund to 6 months expenses',
-          'Update nominee in all investments and insurance',
+          'Review and increase your emergency fund',
+          'Update your insurance coverage',
+          'Adjust your monthly SIP amounts',
+          'Consult a financial advisor for personalised advice',
         ]
       })
     } finally {
@@ -59,92 +53,115 @@ export default function LifeEventAdvisor() {
     }
   }
 
-  if (selected) {
-    return (
-      <div>
-        <button onClick={() => { setSelected(null); setAdvice(null) }}
-          style={{
-            background: 'none', border: 'none',
-            color: '#8b949e', cursor: 'pointer',
-            fontSize: '13px', marginBottom: '20px',
-            fontFamily: 'Poppins, sans-serif',
-          }}>
-          &larr; Back
-        </button>
-
-        <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '4px' }}>{selected.label}</h1>
-        <p style={{ color: '#8b949e', fontSize: '13px', marginBottom: '28px' }}>{selected.desc}</p>
-
-        {loading && (
-          <div style={{ color: '#8b949e', fontSize: '14px', textAlign: 'center', padding: '40px' }}>
-            Analysing your financial situation...
+  return (
+    <div className="section-page active">
+      <div className="relative min-h-screen pt-10 pb-32">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="mb-12 fade-up">
+            <h1 className="font-headline text-5xl md:text-7xl font-black tracking-tighter text-[#ecedf6] leading-none mb-4">
+              Life Event <span className="text-[#4af8e3]">Advisor</span>
+            </h1>
+            <p className="text-[#a9abb3] text-lg font-body">Navigate life's financial crossroads with AI precision. See immediate impact on your baseline.</p>
           </div>
-        )}
 
-        {!loading && advice && (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-              {['before', 'after'].map(state => (
-                <Card key={state} style={{ borderColor: state === 'after' ? '#7c3aed40' : '#30363d' }}>
-                  <div style={{
-                    fontSize: '11px', fontWeight: 700,
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
-                    color: state === 'after' ? '#a78bfa' : '#8b949e',
-                    marginBottom: '16px',
-                  }}>
-                    {state === 'before' ? 'Before' : 'After'}
-                  </div>
-                  {Object.entries(advice[state] || {}).map(([key, val]) => (
-                    <div key={key} style={{
-                      display: 'flex', justifyContent: 'space-between',
-                      padding: '8px 0', borderBottom: '1px solid #21262d',
-                      fontSize: '13px',
-                    }}>
-                      <span style={{ color: '#8b949e' }}>{key}</span>
-                      <span style={{ fontWeight: 600, color: state === 'after' ? '#a78bfa' : '#e6edf3' }}>
-                        {formatVal(val)}
-                      </span>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+            {/* Event Picker Column */}
+            <div className="md:col-span-5 space-y-4 fade-up">
+              <h3 className="font-headline text-xl font-bold mb-4">Select Event</h3>
+              {LIFE_EVENTS.map(event => {
+                const isActive = selected?.id === event.id;
+                return (
+                  <div 
+                    key={event.id}
+                    onClick={() => handleEventClick(event)}
+                    className={`glass-card rounded-2xl p-5 border-l-4 cursor-pointer transition-all ${isActive ? 'bg-[#22262f] shadow-[0_0_20px_rgba(255,255,255,0.05)] translate-x-1' : 'hover:translate-x-1'}`}
+                    style={{ borderColor: event.color }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-colors" style={{ background: event.bg, color: event.color }}>
+                        <span className="material-symbols-outlined">{event.icon}</span>
+                      </div>
+                      <div>
+                        <h4 className="font-headline font-bold text-[#ecedf6] text-lg">{event.label}</h4>
+                        <p className="text-[#a9abb3] text-xs font-label">{event.desc}</p>
+                      </div>
                     </div>
-                  ))}
-                </Card>
-              ))}
+                  </div>
+                );
+              })}
             </div>
 
-            <Card>
-              <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '16px' }}>Action Plan</div>
-              <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {(advice.recommendations || []).map((action, i) => (
-                  <li key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', fontSize: '13px', color: '#c9d1d9' }}>
-                    <span style={{
-                      background: '#7c3aed20', color: '#a78bfa',
-                      borderRadius: '50%', width: '22px', height: '22px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '11px', fontWeight: 700, flexShrink: 0,
-                    }}>{i + 1}</span>
-                    {action}
-                  </li>
-                ))}
-              </ol>
-            </Card>
-          </>
-        )}
-      </div>
-    )
-  }
+            {/* Analysis Column */}
+            <div className="md:col-span-7">
+              {!selected ? (
+                <div className="glass-card-static rounded-2xl p-12 h-full flex flex-col items-center justify-center text-center text-[#a9abb3] border-dashed">
+                  <span className="material-symbols-outlined text-6xl mb-4 text-[#22262f]">hub</span>
+                  <p className="font-headline text-xl font-bold text-[#ecedf6] mb-2">Awaiting Parameters</p>
+                  <p className="text-sm font-label">Select a life event to trigger the simulation engine.</p>
+                </div>
+              ) : (
+                <div className="event-detail space-y-6">
+                  {loading && (
+                    <div className="glass-card-static rounded-2xl p-12 text-center text-[#a9abb3] flex flex-col items-center justify-center">
+                      <div className="w-8 h-8 border-4 border-[#22262f] border-t-[#4af8e3] rounded-full animate-spin mb-4"></div>
+                      <p className="font-label font-bold tracking-widest uppercase text-xs">Simulating Timelines...</p>
+                    </div>
+                  )}
 
-  return (
-    <div>
-      <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px' }}>Life Event Advisor</h1>
-      <p style={{ color: '#8b949e', marginBottom: '28px', fontSize: '14px' }}>
-        Your financial plan, updated for life's big moments
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-        {LIFE_EVENTS.map(event => (
-          <Card key={event.id} onClick={() => handleEventClick(event)} style={{ cursor: 'pointer' }}>
-            <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '4px' }}>{event.label}</div>
-            <div style={{ color: '#8b949e', fontSize: '12px' }}>{event.desc}</div>
-          </Card>
-        ))}
+                  {!loading && advice && (
+                    <>
+                      {/* Before / After Header */}
+                      <div className="glass-card-static rounded-2xl overflow-hidden">
+                        <div className="grid grid-cols-2 divide-x divide-[#22262f] border-b border-[#22262f]">
+                          <div className="p-4 text-center">
+                            <span className="text-[10px] font-bold text-[#a9abb3] uppercase tracking-widest font-label block mb-1">Baseline</span>
+                            <span className="font-headline font-bold text-lg text-[#ecedf6]">Before</span>
+                          </div>
+                          <div className="p-4 text-center bg-[#4af8e3]/5">
+                            <span className="text-[10px] font-bold text-[#4af8e3] uppercase tracking-widest font-label block mb-1">Simulated</span>
+                            <span className="font-headline font-bold text-lg text-[#4af8e3]">After</span>
+                          </div>
+                        </div>
+
+                        {/* Metrics Rows */}
+                        <div className="divide-y divide-[#22262f]/50">
+                          {Object.keys(advice.after || {}).map(key => {
+                            const valBefore = advice.before?.[key] || 0;
+                            const valAfter = advice.after[key];
+                            return (
+                              <div key={key} className="grid grid-cols-12 items-center p-4 hover:bg-[#22262f]/30 transition-colors">
+                                <div className="col-span-4 text-sm font-bold text-[#a9abb3]">{key}</div>
+                                <div className="col-span-3 text-right font-headline">{formatVal(valBefore)}</div>
+                                <div className="col-span-2 flex justify-center text-[#45484f]"><span className="material-symbols-outlined text-sm">arrow_forward</span></div>
+                                <div className="col-span-3 text-left font-headline font-bold text-[#4af8e3]">{formatVal(valAfter)}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Action Plan */}
+                      <div className="glass-card-static rounded-2xl p-8 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#c799ff]/10 blur-3xl rounded-full"></div>
+                        <h4 className="font-headline font-bold text-xl mb-6 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[#c799ff]">auto_awesome</span> Tactical Protocol
+                        </h4>
+                        <div className="space-y-4 relative z-10">
+                          {(advice.recommendations || []).map((action, i) => (
+                            <div key={i} className="flex gap-4 items-start">
+                              <div className="w-6 h-6 rounded-full bg-[#c799ff]/20 text-[#c799ff] flex items-center justify-center text-xs font-bold font-label shrink-0 mt-0.5">{i + 1}</div>
+                              <p className="text-[#ecedf6] text-sm font-body leading-relaxed">{action}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

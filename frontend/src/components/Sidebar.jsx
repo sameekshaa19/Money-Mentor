@@ -27,7 +27,7 @@ export default function Navbar() {
         marginRight: '24px',
         whiteSpace: 'nowrap',
       }}>
-        AI Money Mentor
+        AI Money Minter
       </span>
 
       <div style={{

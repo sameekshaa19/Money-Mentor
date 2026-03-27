@@ -1,205 +1,277 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Card } from '../components/ui/Card'
-import { Button } from '../components/ui/Button'
 
-const MOCK_PROFILE = { monthlyIncome: 120000, monthlyExpenses: 55000 }
-const surplus = MOCK_PROFILE.monthlyIncome - MOCK_PROFILE.monthlyExpenses
+const SURPLUS = 65000;
+const BACKEND = 'http://localhost:8000';
 
 const PRESET_GOALS = [
-  { id: 'wedding',   name: 'Wedding',           defaultAmount: 3000000, defaultYears: 8,  expectedReturn: 12 },
-  { id: 'education', name: "Child's Education", defaultAmount: 5000000, defaultYears: 12, expectedReturn: 12 },
-  { id: 'home',      name: 'Home Purchase',     defaultAmount: 2500000, defaultYears: 5,  expectedReturn: 10 },
-  { id: 'parents',   name: "Parents' Medical",  defaultAmount: 2000000, defaultYears: 3,  expectedReturn: 7  },
-  { id: 'car',       name: 'Car',               defaultAmount: 800000,  defaultYears: 2,  expectedReturn: 7  },
-  { id: 'vacation',  name: 'Vacation',          defaultAmount: 300000,  defaultYears: 1,  expectedReturn: 6  },
-]
+  { id:'wedding',   name:'Wedding',           icon:'celebration',  defaultAmount:3000000, defaultYears:8,  expectedReturn:12 },
+  { id:'education', name:"Child's Education", icon:'school',       defaultAmount:5000000, defaultYears:12, expectedReturn:12 },
+  { id:'home',      name:'Home Purchase',     icon:'home',         defaultAmount:2500000, defaultYears:5,  expectedReturn:10 },
+  { id:'parents',   name:"Parents' Medical",  icon:'favorite',     defaultAmount:2000000, defaultYears:3,  expectedReturn:7  },
+  { id:'car',       name:'Car',               icon:'directions_car',defaultAmount:800000, defaultYears:2,  expectedReturn:7  },
+  { id:'vacation',  name:'Vacation',          icon:'flight',       defaultAmount:300000,  defaultYears:1,  expectedReturn:6  },
+];
 
 const INITIAL_GOALS = [
-  { id: 1, name: 'Wedding',           targetAmount: 3000000, years: 8,  monthlySIP: 18500, fundCategory: 'Equity Fund',     conflict: false },
-  { id: 2, name: "Child's Education", targetAmount: 5000000, years: 12, monthlySIP: 15000, fundCategory: 'Equity Large Cap', conflict: false },
-  { id: 3, name: 'Home Purchase',     targetAmount: 2500000, years: 5,  monthlySIP: 32000, fundCategory: 'Hybrid Fund',      conflict: true  },
-]
+  { id:1, name:'Wedding',           targetAmount:3000000, years:8,  monthlySIP:18500, fundCategory:'Equity Fund',      conflict:false },
+  { id:2, name:"Child's Education", targetAmount:5000000, years:12, monthlySIP:15000, fundCategory:'Equity Large Cap', conflict:false },
+  { id:3, name:'Home Purchase',     targetAmount:2500000, years:5,  monthlySIP:32000, fundCategory:'Hybrid Fund',      conflict:true  },
+];
 
-const formatINR = (n) => '\u20B9' + Number(n).toLocaleString('en-IN')
+function fmtINR(n) {
+  return '₹' + Number(n).toLocaleString('en-IN');
+}
+
+function fundCategory(years) {
+  return years <= 3 ? 'Debt Fund' : years <= 7 ? 'Hybrid Fund' : 'Equity Fund';
+}
 
 export default function ZindagiGoals() {
-  const [goals, setGoals] = useState(INITIAL_GOALS)
-  const [showPresets, setShowPresets] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [goals, setGoals] = useState(INITIAL_GOALS);
+  const [viewState, setViewState] = useState('list'); // 'list', 'presets', 'customize'
+  const [loading, setLoading] = useState(false);
+  const [currentPreset, setCurrentPreset] = useState(null);
+  
+  const [customizeAmount, setCustomizeAmount] = useState('');
+  const [customizeYears, setCustomizeYears] = useState('');
 
-  const totalSIP = goals.reduce((sum, g) => sum + g.monthlySIP, 0)
-  const hasConflict = totalSIP > surplus
-  const pct = Math.min((totalSIP / surplus) * 100, 100)
+  const totalSIP = goals.reduce((s, g) => s + g.monthlySIP, 0);
+  const conflict = totalSIP > SURPLUS;
+  const pct = Math.min((totalSIP / SURPLUS) * 100, 100);
 
-  const addGoal = async (preset) => {
-    setLoading(true)
-    setShowPresets(false)
+  // Recalculate conflict when goals change
+  useEffect(() => {
+    setGoals(prev => prev.map(g => ({ ...g, conflict: totalSIP > SURPLUS })));
+  }, [totalSIP]);
+
+  const removeGoal = (id) => {
+    setGoals(goals.filter(g => g.id !== id));
+  };
+
+  const openCustomize = (preset) => {
+    setCurrentPreset(preset);
+    setCustomizeAmount(preset.defaultAmount);
+    setCustomizeYears(preset.defaultYears);
+    setViewState('customize');
+  };
+
+  const addGoal = async () => {
+    if (!currentPreset) return;
+    const amount = Number(customizeAmount);
+    const years = Number(customizeYears);
+    if (!amount || !years) return;
+
+    setViewState('list');
+    setLoading(true);
+
+    let monthlySIP;
     try {
-      const payload = {
-        goals: [{
-          name: preset.name,
-          target_amount: preset.defaultAmount,
-          current_savings: 0,
-          timeline_years: preset.defaultYears,
-          expected_return: preset.expectedReturn,
+      const res = await axios.post(`${BACKEND}/api/goals`, {
+        goals: [{ 
+          name: currentPreset.name, 
+          target_amount: amount, 
+          current_savings: 0, 
+          timeline_years: years, 
+          expected_return: currentPreset.expectedReturn 
         }],
-        monthly_surplus: surplus,
-      }
-      const res = await axios.post('http://localhost:8000/api/goals', payload)
-      const apiGoal = res.data.data.goals[0]
-      const fundCategory = preset.defaultYears <= 3 ? 'Debt Fund' : preset.defaultYears <= 7 ? 'Hybrid Fund' : 'Equity Fund'
-      const newGoal = {
-        id: Date.now(),
-        name: preset.name,
-        targetAmount: preset.defaultAmount,
-        years: preset.defaultYears,
-        monthlySIP: Math.round(apiGoal.monthly_sip),
-        fundCategory,
-        conflict: false,
-      }
-      const updatedGoals = [...goals, newGoal]
-      const newTotal = updatedGoals.reduce((s, g) => s + g.monthlySIP, 0)
-      setGoals(updatedGoals.map(g => ({ ...g, conflict: newTotal > surplus })))
-    } catch (err) {
-      console.error('Goals API failed, using estimate', err)
-      // fallback to estimate if backend is down
-      const newGoal = {
-        id: Date.now(),
-        name: preset.name,
-        targetAmount: preset.defaultAmount,
-        years: preset.defaultYears,
-        monthlySIP: Math.round(preset.defaultAmount / (preset.defaultYears * 12)),
-        fundCategory: preset.defaultYears <= 3 ? 'Debt Fund' : preset.defaultYears <= 7 ? 'Hybrid Fund' : 'Equity Fund',
-        conflict: false,
-      }
-      setGoals([...goals, newGoal])
-    } finally {
-      setLoading(false)
+        monthly_surplus: SURPLUS
+      });
+      monthlySIP = Math.round(res.data.data.goals[0].monthly_sip);
+    } catch(e) {
+      console.error('API failed, using estimate', e);
+      monthlySIP = Math.round(amount / (years * 12));
     }
-  }
+
+    setLoading(false);
+
+    const newGoal = { 
+      id: Date.now(), 
+      name: currentPreset.name, 
+      targetAmount: amount, 
+      years, 
+      monthlySIP, 
+      fundCategory: fundCategory(years), 
+      conflict: false 
+    };
+    
+    setGoals(prev => [...prev, newGoal]);
+    setCurrentPreset(null);
+  };
 
   return (
-    <div>
-      <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px' }}>Zindagi Goals Planner</h1>
-      <p style={{ color: '#8b949e', marginBottom: '28px', fontSize: '14px' }}>
-        Plan for real Indian life goals — not just retirement
-      </p>
-
-      {hasConflict && (
-        <div style={{
-          background: '#f8514910',
-          border: '1px solid #f8514940',
-          borderRadius: '10px',
-          padding: '14px 16px',
-          marginBottom: '20px',
-        }}>
-          <div style={{ color: '#f85149', fontWeight: 600, fontSize: '13px' }}>SIP Conflict Detected</div>
-          <div style={{ color: '#f8514980', fontSize: '12px', marginTop: '2px' }}>
-            Total SIPs ({formatINR(totalSIP)}/mo) exceed investable surplus ({formatINR(surplus)}/mo)
+    <div className="section-page active">
+      <div className="relative min-h-screen pt-10 pb-32">
+        <div className="max-w-4xl mx-auto px-6">
+          {/* Header */}
+          <div className="mb-12 fade-up">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-6">
+              <span className="flex h-2 w-2 rounded-full bg-[#c799ff] animate-pulse"></span>
+              <span className="text-[#c799ff] font-label text-xs font-bold tracking-widest uppercase">Goal Engine Active</span>
+            </div>
+            <h1 className="font-headline text-5xl md:text-7xl font-black tracking-tighter text-[#ecedf6] leading-none mb-4">
+              Zindagi <span className="text-[#c799ff]">Goals</span>
+            </h1>
+            <p className="text-[#a9abb3] text-lg font-body">Plan for real Indian life goals — not just retirement. Every SIP calculated live from the backend.</p>
           </div>
-        </div>
-      )}
 
-      <Card style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '10px' }}>
-          <span style={{ color: '#8b949e' }}>Total Goal SIPs</span>
-          <span style={{ fontWeight: 700, color: hasConflict ? '#f85149' : '#a78bfa' }}>
-            {formatINR(totalSIP)} / mo
-          </span>
-        </div>
-        <div style={{ background: '#0d1117', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
-          <div style={{
-            height: '6px',
-            borderRadius: '99px',
-            width: `${pct}%`,
-            background: hasConflict ? '#f85149' : 'linear-gradient(90deg, #7c3aed, #a78bfa)',
-            transition: 'width 0.4s',
-          }} />
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#8b949e', marginTop: '6px' }}>
-          <span>{formatINR(0)}</span>
-          <span>Surplus: {formatINR(surplus)}</span>
-        </div>
-      </Card>
+          {/* Profile bar */}
+          <div className="glass-card-static rounded-2xl p-6 mb-8 fade-up">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-[#a9abb3] text-sm font-label uppercase tracking-widest">Monthly Investable Surplus</span>
+              <span className="font-headline text-2xl font-bold text-[#ecedf6]">{fmtINR(SURPLUS)}</span>
+            </div>
+            <div className="flex justify-between items-center mb-4 text-xs font-label text-[#a9abb3]">
+              <span>Income ₹1,20,000 — Expenses ₹55,000</span>
+              <span className="font-bold" style={{ color: conflict ? '#f85149' : '#4af8e3' }}>
+                {conflict ? '⚠ Over Budget' : 'Available'}
+              </span>
+            </div>
+            {/* SIP progress bar */}
+            <div className="w-full bg-[#0d1117] rounded-full h-2 overflow-hidden">
+              <div 
+                className="sip-bar h-2 rounded-full" 
+                style={{ 
+                  width: `${pct}%`, 
+                  background: conflict ? '#f85149' : 'linear-gradient(90deg,#c799ff,#bc87fe)' 
+                }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-xs font-label text-[#a9abb3] mt-2">
+              <span>Total SIPs: <span className="text-[#ecedf6] font-bold">{fmtINR(totalSIP)}</span>/mo</span>
+              <span>Surplus: {fmtINR(SURPLUS)}</span>
+            </div>
+          </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
-        {goals.map(g => (
-          <Card key={g.id} style={{ borderColor: g.conflict ? '#f8514440' : '#30363d' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '15px' }}>{g.name}</div>
-                <div style={{ color: '#8b949e', fontSize: '13px', marginTop: '2px' }}>
-                  {formatINR(g.targetAmount)} in {g.years} yrs
-                </div>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px', alignItems: 'center' }}>
-                  <span style={{
-                    background: '#21262d', color: '#8b949e',
-                    padding: '3px 10px', borderRadius: '20px', fontSize: '11px',
-                  }}>{g.fundCategory}</span>
-                  <span style={{ color: '#a78bfa', fontWeight: 700, fontSize: '14px' }}>
-                    {formatINR(g.monthlySIP)}/mo
-                  </span>
-                  {g.conflict && (
-                    <span style={{
-                      background: '#f8514910', color: '#f85149',
-                      padding: '3px 10px', borderRadius: '20px', fontSize: '11px',
-                    }}>Conflict</span>
-                  )}
+          {/* Conflict banner */}
+          {conflict && (
+            <div className="rounded-2xl p-4 mb-6 fade-up" style={{ background: 'rgba(248,81,73,0.06)', border: '1px solid rgba(248,81,73,0.25)' }}>
+              <div className="text-[#f85149] font-bold text-sm">⚠ SIP Conflict Detected</div>
+              <div className="text-[#f85149]/70 text-xs mt-1">Total SIPs exceed your monthly surplus. Consider extending timelines or reducing targets.</div>
+            </div>
+          )}
+
+          {/* Goal cards */}
+          <div className="space-y-4 mb-6">
+            {goals.map(g => (
+              <div key={g.id} className="goal-row glass-card rounded-2xl p-6 fade-up" style={{ borderColor: g.conflict ? 'rgba(248,81,73,0.3)' : '' }}>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h4 className="font-headline font-bold text-lg text-[#ecedf6]">{g.name}</h4>
+                      {g.conflict && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-label uppercase tracking-widest" style={{ background: 'rgba(248,81,73,0.1)', color: '#f85149', border: '1px solid rgba(248,81,73,0.3)' }}>
+                          Conflict
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[#a9abb3] text-sm font-label mb-4">{fmtINR(g.targetAmount)} in {g.years} years</p>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="px-3 py-1 rounded-full text-xs font-label font-bold uppercase tracking-wider" style={{ background: '#22262f', color: '#a9abb3' }}>
+                        {g.fundCategory}
+                      </span>
+                      <span className="font-headline text-xl font-bold text-[#c799ff]">
+                        {fmtINR(g.monthlySIP)}<span className="text-sm font-normal text-[#a9abb3]">/mo</span>
+                      </span>
+                    </div>
+                  </div>
+                  <button 
+                    className="remove-btn ml-4 p-2 rounded-lg hover:bg-[#f85149]/10 transition-all text-[#a9abb3] hover:text-[#f85149] cursor-pointer" 
+                    onClick={() => removeGoal(g.id)}
+                  >
+                    <span className="material-symbols-outlined text-lg">close</span>
+                  </button>
                 </div>
               </div>
-              <button
-                onClick={() => setGoals(goals.filter(x => x.id !== g.id))}
-                style={{
-                  background: 'none', border: 'none',
-                  color: '#8b949e', cursor: 'pointer', fontSize: '16px',
-                }}
-              >x</button>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      {!showPresets ? (
-        <Button onClick={() => setShowPresets(true)} variant="ghost" style={{ width: '100%' }}>
-          + Add a Goal
-        </Button>
-      ) : (
-        <Card>
-          <div style={{ fontSize: '13px', color: '#8b949e', marginBottom: '12px' }}>Choose a goal:</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-            {PRESET_GOALS.map(p => (
-              <button key={p.id} onClick={() => addGoal(p)}
-                style={{
-                  background: '#0d1117',
-                  border: '1px solid #30363d',
-                  borderRadius: '10px',
-                  padding: '14px 12px',
-                  cursor: 'pointer',
-                  color: '#e6edf3',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  transition: 'border-color 0.2s',
-                  fontFamily: 'Poppins, sans-serif',
-                }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = '#7c3aed'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = '#30363d'}
-              >
-                {p.name}
-              </button>
             ))}
           </div>
-          <button onClick={() => setShowPresets(false)}
-            style={{
-              background: 'none', border: 'none',
-              color: '#8b949e', fontSize: '12px',
-              marginTop: '12px', cursor: 'pointer',
-              fontFamily: 'Poppins, sans-serif',
-            }}>
-            Cancel
-          </button>
-        </Card>
-      )}
+
+          {/* Loading */}
+          {loading && (
+            <div className="text-center py-8">
+              <div className="inline-flex items-center gap-3 text-[#a9abb3]">
+                <div className="w-4 h-4 border-2 border-[#c799ff]/30 border-t-[#c799ff] rounded-full animate-spin"></div>
+                <span className="font-label text-sm">Calculating SIP from backend...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Add Goal button */}
+          {viewState === 'list' && !loading && (
+            <div>
+              <button 
+                onClick={() => setViewState('presets')} 
+                className="w-full py-4 glass-card rounded-2xl text-[#a9abb3] hover:text-[#c799ff] font-headline font-bold text-sm tracking-widest uppercase transition-all hover:border-[#c799ff]/30 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-lg">add</span> Add a Goal
+              </button>
+            </div>
+          )}
+
+          {/* Preset picker */}
+          {viewState === 'presets' && (
+            <div className="glass-card-static rounded-2xl p-6 fade-up">
+              <p className="text-xs font-label text-[#a9abb3] uppercase tracking-widest mb-4">Select a goal to plan:</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                {PRESET_GOALS.map(p => (
+                  <button 
+                    key={p.id}
+                    onClick={() => openCustomize(p)}
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl text-[#ecedf6] font-headline font-bold text-sm transition-all border border-[#30363d] bg-[#0d1117] hover:border-[#c799ff]/40 group cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[#a9abb3] group-hover:text-[#c799ff] transition-colors">{p.icon}</span>
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setViewState('list')} className="text-[#a9abb3] text-xs font-label hover:text-[#ecedf6] transition-colors cursor-pointer">Cancel</button>
+            </div>
+          )}
+
+          {/* Customize panel */}
+          {viewState === 'customize' && currentPreset && (
+            <div className="glass-card-static rounded-2xl p-6 fade-up">
+              <div className="flex items-center gap-3 mb-6">
+                <button onClick={() => setViewState('presets')} className="text-[#a9abb3] hover:text-[#ecedf6] transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-sm">arrow_back</span>
+                </button>
+                <div>
+                  <h3 className="font-headline font-bold text-lg">{currentPreset.name}</h3>
+                  <p className="text-[#a9abb3] text-xs font-label">Adjust to your exact needs</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="text-[10px] font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Target Amount (₹)</label>
+                  <input 
+                    type="number" 
+                    value={customizeAmount}
+                    onChange={(e) => setCustomizeAmount(e.target.value)}
+                    className="rounded-lg px-3"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Timeline (Years)</label>
+                  <input 
+                    type="number" 
+                    value={customizeYears}
+                    onChange={(e) => setCustomizeYears(e.target.value)}
+                    className="rounded-lg px-3"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={addGoal} className="flex-1 py-3 bg-gradient-to-r from-[#c799ff] to-[#bc87fe] rounded-full text-[#340064] font-headline font-bold hover:shadow-[0_0_20px_rgba(199,153,255,0.3)] transition-all cursor-pointer">
+                  Calculate SIP
+                </button>
+                <button onClick={() => setViewState('list')} className="px-6 py-3 glass-card rounded-full text-[#a9abb3] font-headline font-bold hover:text-[#ecedf6] transition-all cursor-pointer">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
