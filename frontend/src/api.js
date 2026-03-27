@@ -7,6 +7,20 @@ export const api = {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   
+  // New X-Ray API (direct to new router)
+  uploadCAMSStatement: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return axios.post('http://localhost:8000/xray/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  
+  // New Couples API
+  analyzeCouples: (data) => axios.post('http://localhost:8000/couples/analyze', data, {
+    headers: { 'Content-Type': 'application/json' }
+  }),
+  
   getHealthScore: (profile) => axios.post(`${API_BASE}/health-score`, profile),
   
   getFirePlan: (inputs) => axios.post(`${API_BASE}/fire`, inputs),

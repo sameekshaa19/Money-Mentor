@@ -1,13 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
+import FinanceChatbot from '../pages/FinanceChatbot';
 
 const navItems = [
   { name: 'Home', path: '/', icon: '🏠' },
   { name: 'Portfolio X-Ray', path: '/xray', icon: '🔍' },
+  { name: 'Couples Planner', path: '/couples', icon: '💑' },
   { name: 'Health Score', path: '/health', icon: '🏥' },
   { name: 'FIRE Plan', path: '/fire', icon: '🔥' },
   { name: 'Goals', path: '/goals', icon: '🎯' },
   { name: 'Life Events', path: '/events', icon: '📅' },
-  { name: 'Couple Finance', path: '/couple', icon: '💑' },
+  { name: 'Couple Finance', path: '/couple', icon: '�' },
 ];
 
 export default function Layout({ children }) {
@@ -43,6 +45,10 @@ export default function Layout({ children }) {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-10">
         {children}
+        {/* Global Finance Chatbot */}
+        <div className="max-w-4xl mx-auto mt-12">
+          <FinanceChatbot />
+        </div>
       </main>
     </div>
   );

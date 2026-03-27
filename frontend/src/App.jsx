@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import XRay from './pages/XRay';
+import CouplesPlanner from './pages/CouplesPlanner';
 import HealthScore from './pages/HealthScore';
 import Fire from './pages/Fire';
 import Goals from './pages/Goals';
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/xray" element={<XRay />} />
+          <Route path="/couples" element={<CouplesPlanner />} />
           <Route path="/health" element={<HealthScore />} />
           <Route path="/fire" element={<Fire />} />
           <Route path="/goals" element={<Goals />} />
