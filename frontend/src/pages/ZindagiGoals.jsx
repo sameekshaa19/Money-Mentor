@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-const SURPLUS = 65000;
 const BACKEND = 'http://localhost:8000';
 
 const PRESET_GOALS = [
@@ -28,6 +27,10 @@ function fundCategory(years) {
 }
 
 export default function ZindagiGoals() {
+  const [income, setIncome] = useState(() => Number(localStorage.getItem('userIncome')) || 120000);
+  const [expenses, setExpenses] = useState(() => Number(localStorage.getItem('userExpenses')) || 55000);
+  const SURPLUS = income - expenses;
+
   const [goals, setGoals] = useState(INITIAL_GOALS);
   const [viewState, setViewState] = useState('list'); // 'list', 'presets', 'customize'
   const [loading, setLoading] = useState(false);
@@ -44,6 +47,11 @@ export default function ZindagiGoals() {
   useEffect(() => {
     setGoals(prev => prev.map(g => ({ ...g, conflict: totalSIP > SURPLUS })));
   }, [totalSIP]);
+
+  useEffect(() => {
+    localStorage.setItem('userIncome', income);
+    localStorage.setItem('userExpenses', expenses);
+  }, [income, expenses]);
 
   const removeGoal = (id) => {
     setGoals(goals.filter(g => g.id !== id));
@@ -66,6 +74,7 @@ export default function ZindagiGoals() {
     setLoading(true);
 
     let monthlySIP;
+    let aiInsight = null;
     try {
       const res = await axios.post(`${BACKEND}/api/goals`, {
         goals: [{ 
@@ -78,6 +87,7 @@ export default function ZindagiGoals() {
         monthly_surplus: SURPLUS
       });
       monthlySIP = Math.round(res.data.data.goals[0].monthly_sip);
+      aiInsight = res.data.data.ai_insights || null;
     } catch(e) {
       console.error('API failed, using estimate', e);
       monthlySIP = Math.round(amount / (years * 12));
@@ -92,7 +102,8 @@ export default function ZindagiGoals() {
       years, 
       monthlySIP, 
       fundCategory: fundCategory(years), 
-      conflict: false 
+      conflict: false,
+      aiInsight
     };
     
     setGoals(prev => [...prev, newGoal]);
@@ -117,12 +128,32 @@ export default function ZindagiGoals() {
 
           {/* Profile bar */}
           <div className="glass-card-static rounded-2xl p-6 mb-8 fade-up">
+            <div className="flex flex-col md:flex-row gap-6 mb-6">
+              <div className="flex-1 flex flex-col gap-2">
+                <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest">Monthly Income (₹)</label>
+                <input 
+                  type="number" 
+                  value={income}
+                  onChange={(e) => setIncome(Number(e.target.value) || 0)}
+                  className="bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body w-full"
+                />
+              </div>
+              <div className="flex-1 flex flex-col gap-2">
+                <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest">Monthly Expenses (₹)</label>
+                <input 
+                  type="number" 
+                  value={expenses}
+                  onChange={(e) => setExpenses(Number(e.target.value) || 0)}
+                  className="bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body w-full"
+                />
+              </div>
+            </div>
             <div className="flex justify-between items-center mb-3">
-              <span className="text-[#a9abb3] text-sm font-label uppercase tracking-widest">Monthly Investable Surplus</span>
+              <span className="text-[#a9abb3] text-sm font-label uppercase tracking-widest">Investable Surplus</span>
               <span className="font-headline text-2xl font-bold text-[#ecedf6]">{fmtINR(SURPLUS)}</span>
             </div>
             <div className="flex justify-between items-center mb-4 text-xs font-label text-[#a9abb3]">
-              <span>Income ₹1,20,000 — Expenses ₹55,000</span>
+              <span>Status</span>
               <span className="font-bold" style={{ color: conflict ? '#f85149' : '#4af8e3' }}>
                 {conflict ? '⚠ Over Budget' : 'Available'}
               </span>
@@ -174,6 +205,16 @@ export default function ZindagiGoals() {
                         {fmtINR(g.monthlySIP)}<span className="text-sm font-normal text-[#a9abb3]">/mo</span>
                       </span>
                     </div>
+                    {g.aiInsight && (
+                      <div className="mt-4 p-4 rounded-xl" style={{ background: 'rgba(199,153,255,0.06)', borderLeft: '2px solid #c799ff' }}>
+                        <div className="text-[11px] text-[#c799ff] font-bold mb-1 uppercase tracking-widest font-label flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs">auto_awesome</span> AI Insight
+                        </div>
+                        <div className="text-xs text-[#a9abb3] font-body leading-relaxed whitespace-pre-wrap">
+                          {g.aiInsight}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <button 
                     className="remove-btn ml-4 p-2 rounded-lg hover:bg-[#f85149]/10 transition-all text-[#a9abb3] hover:text-[#f85149] cursor-pointer" 

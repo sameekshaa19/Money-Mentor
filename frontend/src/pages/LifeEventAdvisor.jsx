@@ -30,10 +30,16 @@ export default function LifeEventAdvisor() {
     setLoading(true)
     setAdvice(null)
     try {
+      const storedIncome = Number(localStorage.getItem('userIncome')) || 120000;
+      const storedExpenses = Number(localStorage.getItem('userExpenses')) || 55000;
       const res = await axios.post('http://localhost:8000/api/life-event', {
         event_type: event.id,
-        ...MOCK_PROFILE,
-        additional_details: null,
+        monthly_income: storedIncome,
+        monthly_expenses: storedExpenses,
+        total_investments: 500000,
+        insurance_cover: 1000000,
+        emergency_fund: 200000,
+        additional_details: null
       })
       setAdvice(res.data.data)
     } catch (err) {
@@ -102,9 +108,9 @@ export default function LifeEventAdvisor() {
               ) : (
                 <div className="event-detail space-y-6">
                   {loading && (
-                    <div className="glass-card-static rounded-2xl p-12 text-center text-[#a9abb3] flex flex-col items-center justify-center">
-                      <div className="w-8 h-8 border-4 border-[#22262f] border-t-[#4af8e3] rounded-full animate-spin mb-4"></div>
-                      <p className="font-label font-bold tracking-widest uppercase text-xs">Simulating Timelines...</p>
+                    <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-on-surface-variant)' }}>
+                      <div className="spinner"></div>
+                      <p style={{ marginTop: '12px', fontSize: '13px' }}>Analysing your financial shift...</p>
                     </div>
                   )}
 
