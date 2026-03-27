@@ -55,7 +55,13 @@ export default function Navbar() {
         <button className="p-2 hover:bg-[#282c36]/50 rounded-lg transition-all text-[#ecedf6] cursor-pointer">
           <span className="material-symbols-outlined">notifications</span>
         </button>
-        <button className="p-2 hover:bg-[#282c36]/50 rounded-lg transition-all text-[#ecedf6] cursor-pointer">
+        <button 
+          onClick={() => {
+            const token = localStorage.getItem('token');
+            navigate(token ? '/profile' : '/login');
+          }} 
+          className="p-2 hover:bg-[#282c36]/50 rounded-lg transition-all text-[#ecedf6] cursor-pointer"
+        >
           <span className="material-symbols-outlined">account_circle</span>
         </button>
       </div>

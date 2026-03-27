@@ -6,6 +6,8 @@ import ZindagiGoals from './pages/ZindagiGoals'
 import LifeEventAdvisor from './pages/LifeEventAdvisor'
 import CouplePlanner from './pages/CouplePlanner'
 import HealthScore from './pages/HealthScore'
+import Profile from './pages/Profile'
+import Login from './pages/Login'
 
 export default function App() {
   return (
@@ -25,6 +27,8 @@ export default function App() {
           <Route path="/couple" element={<CouplePlanner />} />
           <Route path="/goals" element={<ZindagiGoals />} />
           <Route path="/life" element={<LifeEventAdvisor />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </main>
 
