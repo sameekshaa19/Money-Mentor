@@ -12,6 +12,7 @@ from routes.fire import router as fire_router
 from routes.goals import router as goals_router
 from routes.events import router as events_router
 from routes.couple import router as couple_router
+from routes.auth import router as auth_router
 
 app = FastAPI(
     title="MoneyMentor API",
@@ -35,6 +36,7 @@ app.include_router(fire_router,   prefix="/api", tags=["FIRE"])
 app.include_router(goals_router,  prefix="/api", tags=["Goals"])
 app.include_router(events_router, prefix="/api", tags=["Life Events"])
 app.include_router(couple_router, prefix="/api", tags=["Couple"])
+app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
 
 
 @app.get("/")
