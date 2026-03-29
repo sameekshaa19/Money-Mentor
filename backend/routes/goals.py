@@ -6,8 +6,6 @@ import json
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List
-from gemini.client import ask_gemini
-from gemini.prompts import GOALS_PROMPT
 from utils.sip_math import calculate_sip
 
 router = APIRouter()
@@ -50,15 +48,8 @@ async def plan_goals(data: GoalsInput):
 
     has_conflict = total_sip > data.monthly_surplus
 
-    # Gemini insights
-    prompt = GOALS_PROMPT.format(goals_data=json.dumps(data.model_dump()))
-    try:
-        raw = await ask_gemini(prompt)
-        ai_result = json.loads(raw)
-    except json.JSONDecodeError:
-        ai_result = {"raw_response": raw}
-    except RuntimeError as e:
-        raise HTTPException(status_code=502, detail=str(e))
+    # Generate local insights instead of calling Gemini
+    ai_result = generate_goals_insights(data.goals, total_sip, data.monthly_surplus, has_conflict)
 
     return {
         "status": "success",
@@ -70,3 +61,39 @@ async def plan_goals(data: GoalsInput):
             "ai_insights": ai_result,
         },
     }
+
+
+def generate_goals_insights(goals, total_sip, surplus, has_conflict):
+    """Generate local insights for goals planning"""
+    insights = {
+        "summary": "",
+        "recommendations": [],
+        "priority_actions": []
+    }
+    
+    # Summary
+    if has_conflict:
+        insights["summary"] = f"Your goals require ₹{total_sip:,.0f}/month but you only have ₹{surplus:,.0f} available. You need to prioritize or increase surplus."
+    else:
+        insights["summary"] = f"Your goals require ₹{total_sip:,.0f}/month which is within your surplus of ₹{surplus:,.0f}. You're on track!"
+    
+    # Recommendations
+    if has_conflict:
+        insights["recommendations"].append("Consider extending timelines for lower priority goals")
+        insights["recommendations"].append("Look for ways to increase your monthly surplus")
+        insights["recommendations"].append("Prioritize goals with shorter timelines")
+    else:
+        insights["recommendations"].append("Set up automatic SIPs for goal amounts")
+        insights["recommendations"].append("Review progress quarterly and adjust if needed")
+        insights["recommendations"].append("Consider investing surplus for faster goal achievement")
+    
+    # Priority actions
+    if goals:
+        highest_sip_goal = max(goals, key=lambda g: calculate_sip(g.target_amount, g.current_savings, g.expected_return, g.timeline_years))
+        insights["priority_actions"].append(f"Focus on {highest_sip_goal.name} - requires highest SIP")
+    
+    short_term_goals = [g for g in goals if g.timeline_years <= 3]
+    if short_term_goals:
+        insights["priority_actions"].append(f"Secure short-term goals: {', '.join([g.name for g in short_term_goals])}")
+    
+    return insights

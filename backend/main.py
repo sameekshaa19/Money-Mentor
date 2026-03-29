@@ -12,6 +12,7 @@ from routes.fire import router as fire_router
 from routes.goals import router as goals_router
 from routes.events import router as events_router
 from routes.couple import router as couple_router
+from routes.auth import router as auth_router
 from routers import xray, couples, chatbot
 
 app = FastAPI(
@@ -23,7 +24,7 @@ app = FastAPI(
 # --------------- CORS ---------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],   # Vite dev server
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5173", "http://127.0.0.1:5174", "http://127.0.0.1:5175"],   # Vite dev server
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -36,6 +37,7 @@ app.include_router(fire_router,   prefix="/api", tags=["FIRE"])
 app.include_router(goals_router,  prefix="/api", tags=["Goals"])
 app.include_router(events_router, prefix="/api", tags=["Life Events"])
 app.include_router(couple_router, prefix="/api", tags=["Couple"])
+app.include_router(auth_router,   prefix="/api", tags=["Auth"])
 
 # New routers for hackathon features
 app.include_router(xray.router, prefix="/xray", tags=["X-Ray Analysis"])

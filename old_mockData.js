@@ -1,4 +1,4 @@
-export const mockData = {
+﻿export const mockData = {
   healthScore: {
     local_scores: {
       overall_score: 72,
@@ -13,7 +13,7 @@ export const mockData = {
     },
     ai_insights: {
       dimensions: [
-        { name: 'Insurance', insight: 'Your term insurance is below the 10x income rule. Consider increasing to ₹1.5 Cr.' }
+        { name: 'Insurance', insight: 'Your term insurance is below the 10x income rule. Consider increasing to Γé╣1.5 Cr.' }
       ]
     }
   },

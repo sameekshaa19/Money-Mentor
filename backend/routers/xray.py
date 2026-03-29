@@ -9,9 +9,7 @@ from typing import List, Dict
 import logging
 
 # Import services
-from services import xray_service
-from gemini import client as gemini_client
-from gemini.prompts import XRAY_ANALYSIS_PROMPT
+from services.xray_service import parse_cams_pdf, get_current_nav, calculate_xirr, FUND_EXPENSE_RATIOS, FUND_CATEGORIES, calculate_overlap, calculate_expense_drag, get_benchmark_comparison
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -46,7 +44,7 @@ async def upload_statement(file: UploadFile = File(...)):
         
         # Parse PDF transactions
         try:
-            transactions = xray_service.parse_cams_pdf(file_bytes)
+            transactions = parse_cams_pdf(file_bytes)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         
@@ -76,22 +74,22 @@ async def upload_statement(file: UploadFile = File(...)):
                 continue
             
             # Get current NAV
-            current_nav = xray_service.get_current_nav(fund_name)
+            current_nav = get_current_nav(fund_name)
             current_value = units * current_nav
             
             # Calculate XIRR for this fund
-            fund_xirr = xray_service.calculate_xirr(txns, current_value)
+            fund_xirr = calculate_xirr(txns, current_value)
             
             # Get expense ratio
             expense_ratio = 1.0  # Default
-            for known_fund, er in xray_service.FUND_EXPENSE_RATIOS.items():
+            for known_fund, er in FUND_EXPENSE_RATIOS.items():
                 if known_fund.lower() in fund_name.lower() or fund_name.lower() in known_fund.lower():
                     expense_ratio = er
                     break
             
             # Get category
             category = "Equity"
-            for known_fund, cat in xray_service.FUND_CATEGORIES.items():
+            for known_fund, cat in FUND_CATEGORIES.items():
                 if known_fund.lower() in fund_name.lower() or fund_name.lower() in known_fund.lower():
                     category = cat
                     break
@@ -116,13 +114,13 @@ async def upload_statement(file: UploadFile = File(...)):
         
         # Calculate overall XIRR
         all_transactions = transactions
-        overall_xirr = xray_service.calculate_xirr(all_transactions, total_value)
+        overall_xirr = calculate_xirr(all_transactions, total_value)
         
         # Get fund names for overlap analysis
         fund_names = [p['fund_name'] for p in portfolio]
         
         # Calculate overlap
-        overlap = xray_service.calculate_overlap(fund_names)
+        overlap = calculate_overlap(fund_names)
         
         # Calculate expense drag
         holdings_for_expense = [
@@ -133,57 +131,17 @@ async def upload_statement(file: UploadFile = File(...)):
             }
             for p in portfolio
         ]
-        expense_drag = xray_service.calculate_expense_drag(holdings_for_expense, total_value)
+        expense_drag = calculate_expense_drag(holdings_for_expense, total_value)
         
         # Get benchmark comparison
-        benchmark = xray_service.get_benchmark_comparison(fund_names, overall_xirr)
+        benchmark = get_benchmark_comparison(fund_names, overall_xirr)
         
         # Calculate average expense ratio
         avg_er = expense_drag['avg_expense_ratio']
         
-        # Prepare Gemini prompt
-        # Check cache first
-        gemini_input = f"{total_value}_{overall_xirr}_{len(portfolio)}_{avg_er}_{benchmark['alpha']}_{overlap['most_overlapping_pair']}"
-        cached_response = xray_service.get_cached_gemini_response(gemini_input)
-        
-        if cached_response:
-            ai_response = cached_response
-        else:
-            # Build overlap summary
-            overlap_summary = f"{len(overlap['pairs'])} fund pairs analyzed. Highest overlap: {overlap['most_overlapping_pair']}"
-            
-            # Call Gemini
-            prompt = XRAY_ANALYSIS_PROMPT.format(
-                total_value=f"{total_value:,.0f}",
-                xirr=overall_xirr,
-                fund_count=len(portfolio),
-                avg_expense_ratio=avg_er,
-                is_beating_benchmark="Yes" if benchmark['is_beating_benchmark'] else "No",
-                alpha=benchmark['alpha'],
-                overlap_summary=overlap_summary,
-                fee_drag=f"{expense_drag['projected_loss_20yr']:,.0f}"
-            )
-            
-            try:
-                ai_response = gemini_client.generate_text(
-                    prompt=prompt,
-                    model="gemini-1.5-flash"
-                )
-                # Cache the response
-                xray_service.cache_gemini_response(gemini_input, ai_response)
-            except Exception as e:
-                logger.error(f"Gemini API error: {e}")
-                ai_response = (
-                    "1. PORTFOLIO VERDICT: Your portfolio shows healthy diversification.\n"
-                    "2. TOP 3 STRENGTHS: Good fund selection, adequate diversification, consistent investing\n"
-                    "3. TOP 3 PROBLEMS: High expense ratios, some fund overlap, possible sector concentration\n"
-                    "4. REBALANCING ACTIONS: Consider switching to index funds, reduce overlapping holdings\n"
-                    "5. ONE INSIGHT: Small savings in expense ratios compound to significant wealth over 20 years"
-                )
-        
-        # Split AI response into insights and rebalancing plan
-        ai_insights = ai_response
-        rebalancing_plan = "Review your portfolio quarterly and rebalance if any fund exceeds 30% allocation."
+        # Generate local insights (no Gemini API)
+        ai_insights = generate_local_insights(total_value, overall_xirr, len(portfolio), avg_er, benchmark, overlap, expense_drag)
+        rebalancing_plan = generate_local_rebalancing_plan(portfolio, overlap, expense_drag)
         
         return {
             'portfolio': portfolio,
@@ -205,6 +163,99 @@ async def upload_statement(file: UploadFile = File(...)):
             status_code=500,
             detail=f"Failed to process statement: {str(e)}"
         )
+
+
+def generate_local_insights(total_value, overall_xirr, fund_count, avg_er, benchmark, overlap, expense_drag):
+    """Generate local insights without calling external APIs"""
+    insights = []
+    
+    # Portfolio verdict
+    if overall_xirr > 0.12:
+        insights.append("1. PORTFOLIO VERDICT: Excellent performance! Your portfolio is beating expectations.")
+    elif overall_xirr > 0.08:
+        insights.append("1. PORTFOLIO VERDICT: Good performance with room for optimization.")
+    else:
+        insights.append("1. PORTFOLIO VERDICT: Underperforming - consider reviewing your fund selection.")
+    
+    # Top 3 strengths
+    strengths = []
+    if fund_count >= 5:
+        strengths.append("Good diversification across multiple funds")
+    if avg_er < 1.0:
+        strengths.append("Low expense ratios helping returns")
+    if benchmark['is_beating_benchmark']:
+        strengths.append("Outperforming benchmark indices")
+    if total_value > 1000000:
+        strengths.append("Substantial investment corpus built")
+    
+    if strengths:
+        insights.append(f"2. TOP 3 STRENGTHS: {'; '.join(strengths[:3])}")
+    
+    # Top 3 problems
+    problems = []
+    if avg_er > 1.5:
+        problems.append("High expense ratios eating into returns")
+    if overlap['most_overlapping_pair'] and len(overlap['pairs']) > 2:
+        problems.append("Significant fund overlap reducing diversification benefits")
+    if fund_count < 3:
+        problems.append("Limited diversification with few funds")
+    if overall_xirr < 0.06:
+        problems.append("Below-average returns requiring attention")
+    
+    if problems:
+        insights.append(f"3. TOP 3 PROBLEMS: {'; '.join(problems[:3])}")
+    
+    # Rebalancing actions
+    actions = []
+    if avg_er > 1.0:
+        actions.append("Switch to index funds with lower expense ratios")
+    if overlap['most_overlapping_pair']:
+        actions.append("Consolidate overlapping funds to reduce duplication")
+    if fund_count > 8:
+        actions.append("Reduce fund count for easier management")
+    if not benchmark['is_beating_benchmark']:
+        actions.append("Review underperforming funds and consider replacements")
+    
+    if actions:
+        insights.append(f"4. REBALANCING ACTIONS: {'; '.join(actions[:3])}")
+    
+    # One insight
+    if expense_drag['projected_loss_20yr'] > 500000:
+        insights.append("5. ONE INSIGHT: High expense ratios could cost you ₹50+ lakhs over 20 years - consider index funds")
+    elif overlap['most_overlapping_pair']:
+        insights.append("5. ONE INSIGHT: Fund overlap reduces diversification benefits - consolidate similar funds")
+    else:
+        insights.append("5. ONE INSIGHT: Regular portfolio reviews help maintain optimal asset allocation")
+    
+    return '\n'.join(insights)
+
+
+def generate_local_rebalancing_plan(portfolio, overlap, expense_drag):
+    """Generate local rebalancing plan without external APIs"""
+    plan = []
+    
+    # High expense funds
+    high_expense_funds = [p for p in portfolio if p['expense_ratio'] > 1.5]
+    if high_expense_funds:
+        plan.append(f"• Consider switching from high-expense funds: {', '.join([f['fund_name'] for f in high_expense_funds[:2]])}")
+    
+    # Overlapping funds
+    if overlap['most_overlapping_pair']:
+        plan.append(f"• Review overlapping funds: {overlap['most_overlapping_pair']}")
+    
+    # Large holdings
+    large_holdings = [p for p in portfolio if p['current_value'] / sum(p['current_value'] for p in portfolio) > 0.3]
+    if large_holdings:
+        plan.append(f"• Reduce concentration in: {large_holdings[0]['fund_name']} (currently >30% of portfolio)")
+    
+    # General advice
+    plan.extend([
+        "• Review portfolio quarterly and rebalance if allocation drifts >5%",
+        "• Consider tax implications before selling funds",
+        "• Maintain emergency fund separate from equity investments"
+    ])
+    
+    return '\n'.join(plan)
 
 
 @router.get("/health")

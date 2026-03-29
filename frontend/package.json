@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@huggingface/transformers": "^3.8.1",
     "@tailwindcss/vite": "^4.2.2",
     "axios": "^1.13.6",
     "lucide-react": "^0.577.0",
