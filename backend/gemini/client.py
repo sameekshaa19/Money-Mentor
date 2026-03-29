@@ -1,23 +1,20 @@
 """
-Shared Gemini AI client (replaced with Groq/LLaMA 3) — every route imports ask_gemini() from here.
+Shared Gemini AI client
 """
-
 import os
-from groq import Groq
 from dotenv import load_dotenv
+from google import genai
 
 load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 async def ask_gemini(prompt: str) -> str:
-    """Drop-in replacement — same name, no other files need changing."""
     try:
-        response = client.chat.completions.create(
-            model="llama3-8b-8192",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1000,
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
         )
-        return response.choices[0].message.content
+        return response.text
     except Exception as e:
-        raise RuntimeError(f"Groq API error: {e}")
+        raise RuntimeError(f"Gemini API error: {e}")
