@@ -129,6 +129,12 @@ export default function Navbar() {
                 Profile
               </button>
               <button 
+                onClick={() => { navigate('/profile-setup'); setShowLogout(false); }}
+                className="w-full px-4 py-2 text-left text-[#c799ff] hover:bg-[#282c36]/50 transition-colors text-sm font-body"
+              >
+                Edit Financial Profile
+              </button>
+              <button 
                 onClick={handleLogout}
                 className="w-full px-4 py-2 text-left text-[#ff6e84] hover:bg-[#282c36]/50 transition-colors text-sm font-body"
               >

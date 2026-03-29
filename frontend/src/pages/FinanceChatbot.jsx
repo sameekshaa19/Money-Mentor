@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // Configuration
-const GROQ_API_KEY = "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";
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || "";
 
 const STARTERS = [
   "What is a mutual fund?",

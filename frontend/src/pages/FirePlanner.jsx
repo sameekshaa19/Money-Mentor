@@ -8,7 +8,7 @@ export default function FirePlanner() {
   const [loading, setLoading] = useState(false);
   const [currentAge, setCurrentAge] = useState(30);
   const [retirementAge, setRetirementAge] = useState(45);
-  const [currentCorpus, setCurrentCorpus] = useState(1000000);
+  const [currentCorpus, setCurrentCorpus] = useState('');
   const [expectedReturn, setExpectedReturn] = useState(12);
 
   const calculateFire = async () => {
@@ -42,9 +42,58 @@ export default function FirePlanner() {
     }
   };
 
+  // Calculate on initial load only
   useEffect(() => {
     calculateFire();
-  }, [income, expenses, currentAge, retirementAge, currentCorpus, expectedReturn]);
+  }, []);
+
+  // Helper function to generate SVG path for wealth trajectory
+  const generateTrajectoryPath = (returnRate, startingCorpus, targetCorpus, years) => {
+    if (!years || years <= 0) return "M0 100 L100 100";
+    
+    const monthlySIP = fireData?.monthly_sip || 10000;
+    const monthlyReturn = returnRate / 100 / 12;
+    
+    // Generate points for each year
+    let corpus = startingCorpus;
+    let path = "M0 100 "; // Start at bottom-left
+    
+    for (let year = 1; year <= years; year++) {
+      // Compound monthly with SIP
+      for (let month = 0; month < 12; month++) {
+        corpus = corpus * (1 + monthlyReturn) + monthlySIP;
+      }
+      
+      const x = (year / years) * 100;
+      const y = 100 - Math.min((corpus / targetCorpus) * 100, 100);
+      
+      // Use quadratic bezier for smooth curve
+      if (year === 1) {
+        path += `Q ${x/2} ${y + (100-y)/2}, ${x} ${y} `;
+      } else {
+        const prevX = ((year - 1) / years) * 100;
+        const cpX = prevX + (x - prevX) / 2;
+        path += `T ${x} ${y} `;
+      }
+    }
+    
+    return path;
+  };
+
+  // Helper to calculate corpus at a specific year
+  const getCorpusAtYear = (targetYear, returnRate, startingCorpus, targetCorpus) => {
+    if (!fireData) return 0;
+    
+    const monthlySIP = fireData.monthly_sip || 10000;
+    const monthlyReturn = returnRate / 100 / 12;
+    
+    let corpus = startingCorpus;
+    for (let month = 0; month < targetYear * 12; month++) {
+      corpus = corpus * (1 + monthlyReturn) + monthlySIP;
+    }
+    
+    return Math.min(corpus, targetCorpus);
+  };
 
   return (
     <div className="section-page active fade-up">
@@ -76,7 +125,7 @@ export default function FirePlanner() {
           </div>
 
           {/* Input Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <div className="glass-card rounded-2xl p-6">
               <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Current Age</label>
               <input 
@@ -100,7 +149,8 @@ export default function FirePlanner() {
               <input 
                 type="number" 
                 value={currentCorpus}
-                onChange={(e) => setCurrentCorpus(Number(e.target.value))}
+                placeholder="1000000"
+                onChange={(e) => setCurrentCorpus(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
               />
             </div>
@@ -115,31 +165,63 @@ export default function FirePlanner() {
             </div>
           </div>
 
+          {/* Calculate Button */}
+          <div className="flex justify-center mb-8">
+            <button 
+              onClick={calculateFire}
+              disabled={loading}
+              className="px-8 py-4 bg-gradient-to-r from-[#c799ff] to-[#bc87fe] rounded-full text-[#340064] font-headline font-bold text-lg hover:shadow-[0_0_30px_rgba(199,153,255,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 cursor-pointer"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-[#340064]/30 border-t-[#340064] rounded-full animate-spin"></div>
+                  Calculating...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined">calculate</span>
+                  Calculate FIRE Plan
+                </>
+              )}
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="glass-card rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-[#22262f] rounded-lg text-[#a9abb3]"><span className="material-symbols-outlined text-sm">hourglass_empty</span></div>
                 <h3 className="font-headline font-bold text-[#ecedf6]">Time to FIRE</h3>
               </div>
-              <p className="font-headline text-5xl font-black text-[#c799ff]">11<span className="text-2xl text-[#a9abb3]">yrs</span></p>
-              <p className="text-[#a9abb3] text-sm mt-2 font-body">Expected at age 42</p>
+              <p className="font-headline text-5xl font-black text-[#c799ff]">
+                {fireData ? retirementAge - currentAge : '--'}<span className="text-2xl text-[#a9abb3]">yrs</span>
+              </p>
+              <p className="text-[#a9abb3] text-sm mt-2 font-body">Expected at age {retirementAge}</p>
             </div>
             <div className="glass-card rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-[#22262f] rounded-lg text-[#a9abb3]"><span className="material-symbols-outlined text-sm">savings</span></div>
                 <h3 className="font-headline font-bold text-[#ecedf6]">Savings Rate</h3>
               </div>
-              <p className="font-headline text-5xl font-black text-[#4af8e3]">46<span className="text-2xl text-[#a9abb3]">%</span></p>
-              <p className="text-[#a9abb3] text-sm mt-2 font-body">Optimal. Top decile performer.</p>
+              <p className="font-headline text-5xl font-black text-[#4af8e3]">
+                {income > 0 ? Math.round(((income - expenses) / income) * 100) : 0}<span className="text-2xl text-[#a9abb3]">%</span>
+              </p>
+              <p className="text-[#a9abb3] text-sm mt-2 font-body">
+                {income > 0 && ((income - expenses) / income) >= 0.4 ? 'Optimal. Top decile performer.' : 'Work towards 40%+ for faster FIRE'}
+              </p>
             </div>
             <div className="glass-card rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-[#22262f] rounded-lg text-[#a9abb3]"><span className="material-symbols-outlined text-sm">account_balance_wallet</span></div>
                 <h3 className="font-headline font-bold text-[#ecedf6]">Current Corpus</h3>
               </div>
-              <p className="font-headline text-4xl font-black mt-2">₹1.48<span className="text-xl text-[#a9abb3]">Cr</span></p>
+              <p className="font-headline text-4xl font-black mt-2">
+                ₹{fireData ? (currentCorpus / 10000000).toFixed(2) : '0'}<span className="text-xl text-[#a9abb3]">Cr</span>
+              </p>
               <div className="w-full bg-[#22262f] h-1.5 rounded-full mt-4 overflow-hidden">
-                <div className="bg-[#c799ff] h-full rounded-full" style={{ width: '17%' }}></div>
+                <div 
+                  className="bg-[#c799ff] h-full rounded-full transition-all duration-500" 
+                  style={{ width: fireData ? Math.min((currentCorpus / fireData.target_corpus) * 100, 100) + '%' : '0%' }}
+                ></div>
               </div>
             </div>
           </div>
@@ -155,37 +237,61 @@ export default function FirePlanner() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-[#c799ff] shadow-[0_0_8px_rgba(199,153,255,0.6)]"></div>
-                  <span className="text-xs font-label text-[#ecedf6] font-bold">AI Projected (12%)</span>
+                  <span className="text-xs font-label text-[#ecedf6] font-bold">Projected ({expectedReturn}%)</span>
                 </div>
               </div>
             </div>
 
             <div className="relative h-64 w-full flex items-end">
-              {/* Fake Graph */}
+              {/* Dynamic Graph */}
               <div className="absolute inset-0 z-0">
                 <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-                  <path d="M0 100 Q 20 95, 40 80 T 100 10" fill="none" stroke="#45484f" strokeWidth="1" strokeDasharray="4 4"/>
-                  <path d="M0 100 Q 20 90, 40 60 T 100 0" fill="none" stroke="#c799ff" strokeWidth="3" className="drop-shadow-[0_0_8px_rgba(199,153,255,0.6)]"/>
+                  {/* Conservative trajectory (8% return) */}
+                  <path 
+                    d={fireData ? generateTrajectoryPath(8, currentCorpus, fireData.target_corpus * 0.7, retirementAge - currentAge) : "M0 100 Q 20 95, 40 80 T 100 10"} 
+                    fill="none" 
+                    stroke="#45484f" 
+                    strokeWidth="1" 
+                    strokeDasharray="4 4"
+                  />
+                  {/* Projected trajectory (user's expected return) */}
+                  <path 
+                    d={fireData ? generateTrajectoryPath(expectedReturn, currentCorpus, fireData.target_corpus, retirementAge - currentAge) : "M0 100 Q 20 90, 40 60 T 100 0"} 
+                    fill="none" 
+                    stroke="#c799ff" 
+                    strokeWidth="3" 
+                    className="drop-shadow-[0_0_8px_rgba(199,153,255,0.6)]"
+                  />
                 </svg>
               </div>
               
-              {/* Year Markers */}
-              <div className="absolute top-[37%] left-[40%] text-center z-10 hidden md:block">
-                <div className="w-3 h-3 bg-[#4af8e3] rounded-full shadow-[0_0_10px_rgba(74,248,227,0.8)] mx-auto mb-2"></div>
-                <div className="bg-[#22262f] border border-[#30363d] rounded-lg p-2 shadow-xl">
-                  <p className="text-[10px] font-label text-[#a9abb3] uppercase tracking-widest">Year 5 Milestone</p>
-                  <p className="font-headline font-bold">₹3.2 Cr</p>
+              {/* Year 5 Milestone Marker */}
+              {fireData && (
+                <div 
+                  className="absolute text-center z-10 hidden md:block"
+                  style={{ 
+                    left: `${Math.min(40, 100 / (retirementAge - currentAge) * 5)}%`, 
+                    top: `${100 - (getCorpusAtYear(5, expectedReturn, currentCorpus, fireData.target_corpus) / fireData.target_corpus * 100)}%` 
+                  }}
+                >
+                  <div className="w-3 h-3 bg-[#4af8e3] rounded-full shadow-[0_0_10px_rgba(74,248,227,0.8)] mx-auto mb-2"></div>
+                  <div className="bg-[#22262f] border border-[#30363d] rounded-lg p-2 shadow-xl">
+                    <p className="text-[10px] font-label text-[#a9abb3] uppercase tracking-widest">Year 5 Milestone</p>
+                    <p className="font-headline font-bold">₹{(getCorpusAtYear(5, expectedReturn, currentCorpus, fireData.target_corpus) / 10000000).toFixed(1)} Cr</p>
+                  </div>
                 </div>
-              </div>
+              )}
               
-              {/* Goal Marker */}
-              <div className="absolute top-0 right-0 text-center z-10 hidden md:block">
-                <div className="w-4 h-4 bg-[#c799ff] rounded-full border-4 border-[#0b0e14] shadow-[0_0_15px_rgba(199,153,255,1)] mx-auto mb-2 relative left-2"></div>
-                <div className="bg-gradient-to-br from-[#c799ff]/20 to-transparent border border-[#c799ff]/50 rounded-lg p-3 backdrop-blur-md">
-                  <p className="text-[10px] font-label text-[#c799ff] uppercase tracking-widest font-bold">FIRE Achieved (Age 42)</p>
-                  <p className="font-headline text-2xl font-black">₹8.5 Cr</p>
+              {/* FIRE Goal Marker */}
+              {fireData && (
+                <div className="absolute top-0 right-0 text-center z-10 hidden md:block">
+                  <div className="w-4 h-4 bg-[#c799ff] rounded-full border-4 border-[#0b0e14] shadow-[0_0_15px_rgba(199,153,255,1)] mx-auto mb-2 relative left-2"></div>
+                  <div className="bg-gradient-to-br from-[#c799ff]/20 to-transparent border border-[#c799ff]/50 rounded-lg p-3 backdrop-blur-md">
+                    <p className="text-[10px] font-label text-[#c799ff] uppercase tracking-widest font-bold">FIRE Achieved (Age {retirementAge})</p>
+                    <p className="font-headline text-2xl font-black">₹{(fireData.target_corpus / 10000000).toFixed(1)} Cr</p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Grid Lines */}
               <div className="w-full h-full flex flex-col justify-between absolute inset-0 pointer-events-none opacity-20">
@@ -197,9 +303,9 @@ export default function FirePlanner() {
               </div>
             </div>
             <div className="flex justify-between mt-4 text-[#a9abb3] text-xs font-label uppercase tracking-widest relative z-10">
-              <span>Today (Age 31)</span>
-              <span>Year 5 (Age 36)</span>
-              <span>FIRE (Age 42)</span>
+              <span>Today (Age {currentAge})</span>
+              <span>Year {Math.min(5, retirementAge - currentAge)} (Age {Math.min(currentAge + 5, retirementAge)})</span>
+              <span>FIRE (Age {retirementAge})</span>
             </div>
           </div>
 

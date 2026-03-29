@@ -19,23 +19,24 @@ logger = logging.getLogger(__name__)
 async def upload_statement(file: UploadFile = File(...)):
     """
     Upload CAMS/KFintech statement PDF and get complete portfolio analysis.
-    
-    Returns:
-        Complete portfolio analysis including:
-        - Portfolio holdings with current values and XIRR
-        - Fund overlap analysis
-        - Expense ratio drag calculation
-        - Benchmark comparison
-        - AI-generated insights and rebalancing plan
     """
     try:
-        # Validate file type
-        if not file.content_type or 'pdf' not in file.content_type.lower():
-            if not file.filename or not file.filename.lower().endswith('.pdf'):
-                raise HTTPException(
-                    status_code=400, 
-                    detail="Only PDF files are accepted"
-                )
+        # Log file details for debugging
+        logger.info(f"Upload attempt - filename: {file.filename}, content_type: {file.content_type}")
+        
+        # Validate file type - be lenient, check filename first
+        is_pdf = False
+        if file.filename and file.filename.lower().endswith('.pdf'):
+            is_pdf = True
+        elif file.content_type and 'pdf' in file.content_type.lower():
+            is_pdf = True
+            
+        if not is_pdf:
+            logger.warning(f"Rejected file: {file.filename} (content_type: {file.content_type})")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Only PDF files are accepted. Received: {file.content_type or 'unknown'}"
+            )
         
         # Read file bytes
         file_bytes = await file.read()
@@ -45,13 +46,19 @@ async def upload_statement(file: UploadFile = File(...)):
         # Parse PDF transactions
         try:
             transactions = parse_cams_pdf(file_bytes)
+            logger.info(f"PDF parsed successfully - found {len(transactions)} transactions")
         except ValueError as e:
+            logger.error(f"PDF parsing error: {e}")
             raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logger.error(f"Unexpected PDF parsing error: {type(e).__name__}: {e}")
+            raise HTTPException(status_code=400, detail=f"Could not parse PDF: {str(e)}")
         
         if not transactions:
+            logger.warning("No transactions found in the PDF - possible causes: unsupported statement format, encrypted PDF, or no transaction data")
             raise HTTPException(
                 status_code=400, 
-                detail="No transactions found in the PDF"
+                detail="No transactions found in the PDF. Please upload a valid CAMS or KFintech mutual fund statement."
             )
         
         # Group transactions by fund

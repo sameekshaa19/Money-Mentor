@@ -109,7 +109,7 @@ export default function Home() {
       icon: "monitoring",
       color: "#33e9d5",
       path: "/health",
-      available: false // Coming soon
+      available: true
     }
   ];
 
@@ -121,10 +121,10 @@ export default function Home() {
           <div className="max-w-4xl space-y-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card mb-4">
               <span className="flex h-2 w-2 rounded-full bg-[#4af8e3] animate-pulse"></span>
-              <span className="text-[#4af8e3] font-label text-xs font-bold tracking-widest uppercase">Money Mentor AI Active</span>
+              <span className="text-[#4af8e3] font-label text-xs font-bold tracking-widest uppercase">Money Minter AI Active</span>
             </div>
             <h1 className="hero-title font-headline text-7xl md:text-9xl font-black tracking-tighter text-[#ecedf6] leading-none">
-              Money <span className="text-[#c799ff]">Mentor</span>
+              Money <span className="text-[#c799ff]">Minter</span>
             </h1>
             <p className="font-body text-xl md:text-2xl text-[#a9abb3] max-w-2xl mx-auto leading-relaxed">
               Your intelligent financial companion. Navigate wealth creation, tax optimization, and life goals with AI-powered insights.

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import useFinance from '../hooks/useFinance';
+import useUserProfileStore from '../store/useUserProfileStore';
 import FinanceChatbot from './FinanceChatbot';
 import { api } from '../services/api';
 
@@ -48,24 +49,56 @@ const HEALTH_METRICS = [
 
 export default function HealthScore() {
   const { income, expenses, healthScore, setHealthScore } = useFinance();
+  const { profile } = useUserProfileStore();
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState(null);
 
   const calculateHealthScore = async () => {
     setLoading(true);
     
-    // Calculate individual scores
-    const emergencyFundScore = Math.min(100, (expenses * 6 / 100000) * 100); // Assuming 1L emergency fund
-    const insuranceScore = 80; // Mock score
-    const debtRatioScore = 85; // Mock score (assuming low debt)
-    const diversificationScore = 75; // Mock score
-    const savingsRateScore = Math.min(100, ((income - expenses) / income) * 100 * 2); // 50% savings = 100 score
+    // Get actual values from user profile
+    const monthlyIncome = income || profile.income?.salary || 50000;
+    const monthlyExpenses = expenses || profile.expenses?.total || 30000;
+    const emergencyFund = profile.savings?.emergencyFund || 0;
+    const totalInvestments = profile.investments ? 
+      Object.values(profile.investments).reduce((a, b) => a + (b || 0), 0) : 0;
+    const totalDebt = profile.expenses?.loanEMIs || 0;
+    const insuranceCover = profile.riskProfile?.insurance?.life + profile.riskProfile?.insurance?.health || 0;
+    
+    // Calculate 6-month expenses target
+    const sixMonthExpenses = monthlyExpenses * 6;
+    
+    // Calculate individual scores based on actual data
+    const emergencyFundScore = sixMonthExpenses > 0 ? 
+      Math.min(100, (emergencyFund / sixMonthExpenses) * 100) : 0;
+    
+    const insuranceScore = monthlyIncome > 0 ? 
+      Math.min(100, (insuranceCover / (monthlyIncome * 12 * 10)) * 100) : 0; // 10x annual income as ideal
+    
+    const debtRatioScore = monthlyIncome > 0 ? 
+      Math.max(0, 100 - ((totalDebt / monthlyIncome) * 100 * 2)) : 100; // Penalize high debt
+    
+    // Calculate diversification score based on investment mix
+    const investments = profile.investments || {};
+    const totalInv = Object.values(investments).reduce((a, b) => a + (b || 0), 0);
+    let diversificationScore = 50; // Base score
+    if (totalInv > 0) {
+      const hasEquity = investments.equity > 0;
+      const hasDebt = investments.debt > 0 || investments.mutualFunds > 0;
+      const hasGold = investments.gold > 0;
+      const hasRealEstate = investments.realEstate > 0;
+      const assetCount = [hasEquity, hasDebt, hasGold, hasRealEstate].filter(Boolean).length;
+      diversificationScore = Math.min(100, assetCount * 25);
+    }
+    
+    const savingsRate = monthlyIncome > 0 ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) : 0;
+    const savingsRateScore = Math.min(100, savingsRate * 100 * 3); // 33% savings = 100 score
 
     const scores = {
       emergency_fund: Math.round(emergencyFundScore),
-      insurance_coverage: insuranceScore,
-      debt_to_income: debtRatioScore,
-      investment_diversification: diversificationScore,
+      insurance_coverage: Math.round(insuranceScore),
+      debt_to_income: Math.round(debtRatioScore),
+      investment_diversification: Math.round(diversificationScore),
       savings_rate: Math.round(savingsRateScore)
     };
 
@@ -78,7 +111,16 @@ export default function HealthScore() {
       overall: Math.round(totalScore),
       individual: scores,
       grade: getGrade(totalScore),
-      recommendations: getRecommendations(scores)
+      recommendations: getRecommendations(scores),
+      details: {
+        monthlyIncome,
+        monthlyExpenses,
+        emergencyFund,
+        totalInvestments,
+        totalDebt,
+        insuranceCover,
+        savingsRate: Math.round(savingsRate * 100)
+      }
     };
 
     setAnalysis(scoreData);
@@ -119,7 +161,7 @@ export default function HealthScore() {
 
   useEffect(() => {
     calculateHealthScore();
-  }, [income, expenses]);
+  }, [income, expenses, profile]);
 
   const formatCurrency = (n) => `₹${(n || 0).toLocaleString('en-IN')}`;
 

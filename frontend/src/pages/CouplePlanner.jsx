@@ -9,52 +9,60 @@ export default function CouplePlanner() {
   const [partnerA, setPartnerA] = useState({
     name: '',
     age: 30,
-    basic_salary: 0,
-    hra_received: 0,
-    rent_paid: 0,
+    monthly_income: '',
+    monthly_expenses: '',
+    basic_salary: '',
+    hra_received: '',
+    rent_paid: '',
     city: '',
     tax_bracket: 30,
     has_chronic_condition: false,
-    current_health_cover: 0,
-    savings: 0,
-    mf_value: 0,
-    pf_balance: 0,
-    nps_balance: 0,
-    property_value: 0,
-    gold_value: 0,
-    home_loan_outstanding: 0,
-    car_loan: 0,
-    credit_card_debt: 0,
-    other_loans: 0
+    current_health_cover: '',
+    savings: '',
+    mf_value: '',
+    pf_balance: '',
+    nps_balance: '',
+    property_value: '',
+    gold_value: '',
+    home_loan_outstanding: '',
+    car_loan: '',
+    credit_card_debt: '',
+    other_loans: ''
   });
 
   // Form states for Partner B  
   const [partnerB, setPartnerB] = useState({
     name: '',
     age: 30,
-    basic_salary: 0,
-    hra_received: 0,
-    rent_paid: 0,
+    monthly_income: '',
+    monthly_expenses: '',
+    basic_salary: '',
+    hra_received: '',
+    rent_paid: '',
     city: '',
     tax_bracket: 30,
     has_chronic_condition: false,
-    current_health_cover: 0,
-    savings: 0,
-    mf_value: 0,
-    pf_balance: 0,
-    nps_balance: 0,
-    property_value: 0,
-    gold_value: 0,
-    home_loan_outstanding: 0,
-    car_loan: 0,
-    credit_card_debt: 0,
-    other_loans: 0
+    current_health_cover: '',
+    savings: '',
+    mf_value: '',
+    pf_balance: '',
+    nps_balance: '',
+    property_value: '',
+    gold_value: '',
+    home_loan_outstanding: '',
+    car_loan: '',
+    credit_card_debt: '',
+    other_loans: ''
   });
 
   const [monthlySipTarget, setMonthlySipTarget] = useState(50000);
 
   const handleAnalyze = async () => {
-    const result = await analyzeCouple(partnerA, partnerB);
+    const result = await analyzeCouple({
+      partner_a: partnerA,
+      partner_b: partnerB,
+      monthly_sip_target: monthlySipTarget
+    });
     if (result) {
       console.log('Couple analysis result:', result);
     }
@@ -125,7 +133,8 @@ export default function CouplePlanner() {
                     <input 
                       type="number" 
                       value={partnerA.basic_salary}
-                      onChange={(e) => setPartnerA({...partnerA, basic_salary: Number(e.target.value)})}
+                      placeholder="0"
+                      onChange={(e) => setPartnerA({...partnerA, basic_salary: e.target.value === '' ? '' : Number(e.target.value)})}
                       className="w-full bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
                     />
                   </div>
@@ -134,7 +143,8 @@ export default function CouplePlanner() {
                     <input 
                       type="number" 
                       value={partnerA.hra_received}
-                      onChange={(e) => setPartnerA({...partnerA, hra_received: Number(e.target.value)})}
+                      placeholder="0"
+                      onChange={(e) => setPartnerA({...partnerA, hra_received: e.target.value === '' ? '' : Number(e.target.value)})}
                       className="w-full bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
                     />
                   </div>
@@ -143,25 +153,48 @@ export default function CouplePlanner() {
                     <input 
                       type="number" 
                       value={partnerA.rent_paid}
-                      onChange={(e) => setPartnerA({...partnerA, rent_paid: Number(e.target.value)})}
+                      placeholder="0"
+                      onChange={(e) => setPartnerA({...partnerA, rent_paid: e.target.value === '' ? '' : Number(e.target.value)})}
                       className="w-full bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Tax Bracket (%)</label>
-                  <select 
-                    value={partnerA.tax_bracket}
-                    onChange={(e) => setPartnerA({...partnerA, tax_bracket: Number(e.target.value)})}
-                    className="w-full bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
-                  >
-                    <option value={0}>0%</option>
-                    <option value={5}>5%</option>
-                    <option value={10}>10%</option>
-                    <option value={20}>20%</option>
-                    <option value={30}>30%</option>
-                  </select>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Monthly Income</label>
+                    <input 
+                      type="number" 
+                      value={partnerA.monthly_income}
+                      placeholder="0"
+                      onChange={(e) => setPartnerA({...partnerA, monthly_income: e.target.value === '' ? '' : Number(e.target.value)})}
+                      className="w-full bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Monthly Expenses</label>
+                    <input 
+                      type="number" 
+                      value={partnerA.monthly_expenses}
+                      placeholder="0"
+                      onChange={(e) => setPartnerA({...partnerA, monthly_expenses: e.target.value === '' ? '' : Number(e.target.value)})}
+                      className="w-full bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Tax Bracket (%)</label>
+                    <select 
+                      value={partnerA.tax_bracket}
+                      onChange={(e) => setPartnerA({...partnerA, tax_bracket: Number(e.target.value)})}
+                      className="w-full bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
+                    >
+                      <option value={0}>0%</option>
+                      <option value={5}>5%</option>
+                      <option value={10}>10%</option>
+                      <option value={20}>20%</option>
+                      <option value={30}>30%</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -179,7 +212,8 @@ export default function CouplePlanner() {
                   <input 
                     type="number" 
                     value={partnerA.current_health_cover}
-                    onChange={(e) => setPartnerA({...partnerA, current_health_cover: Number(e.target.value)})}
+                    placeholder="0"
+                    onChange={(e) => setPartnerA({...partnerA, current_health_cover: e.target.value === '' ? '' : Number(e.target.value)})}
                     className="w-full bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
                   />
                 </div>
@@ -192,7 +226,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerA.savings}
-                        onChange={(e) => setPartnerA({...partnerA, savings: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerA({...partnerA, savings: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#c799ff]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -201,7 +236,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerA.mf_value}
-                        onChange={(e) => setPartnerA({...partnerA, mf_value: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerA({...partnerA, mf_value: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#c799ff]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -210,7 +246,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerA.pf_balance}
-                        onChange={(e) => setPartnerA({...partnerA, pf_balance: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerA({...partnerA, pf_balance: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#c799ff]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -219,7 +256,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerA.nps_balance}
-                        onChange={(e) => setPartnerA({...partnerA, nps_balance: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerA({...partnerA, nps_balance: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#c799ff]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -228,7 +266,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerA.property_value}
-                        onChange={(e) => setPartnerA({...partnerA, property_value: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerA({...partnerA, property_value: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#c799ff]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -237,7 +276,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerA.gold_value}
-                        onChange={(e) => setPartnerA({...partnerA, gold_value: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerA({...partnerA, gold_value: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#c799ff]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -246,7 +286,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerA.home_loan_outstanding}
-                        onChange={(e) => setPartnerA({...partnerA, home_loan_outstanding: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerA({...partnerA, home_loan_outstanding: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#c799ff]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -255,7 +296,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerA.other_loans}
-                        onChange={(e) => setPartnerA({...partnerA, other_loans: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerA({...partnerA, other_loans: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#c799ff]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -309,7 +351,8 @@ export default function CouplePlanner() {
                     <input 
                       type="number" 
                       value={partnerB.basic_salary}
-                      onChange={(e) => setPartnerB({...partnerB, basic_salary: Number(e.target.value)})}
+                      placeholder="0"
+                      onChange={(e) => setPartnerB({...partnerB, basic_salary: e.target.value === '' ? '' : Number(e.target.value)})}
                       className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
                     />
                   </div>
@@ -318,7 +361,8 @@ export default function CouplePlanner() {
                     <input 
                       type="number" 
                       value={partnerB.hra_received}
-                      onChange={(e) => setPartnerB({...partnerB, hra_received: Number(e.target.value)})}
+                      placeholder="0"
+                      onChange={(e) => setPartnerB({...partnerB, hra_received: e.target.value === '' ? '' : Number(e.target.value)})}
                       className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
                     />
                   </div>
@@ -327,25 +371,48 @@ export default function CouplePlanner() {
                     <input 
                       type="number" 
                       value={partnerB.rent_paid}
-                      onChange={(e) => setPartnerB({...partnerB, rent_paid: Number(e.target.value)})}
+                      placeholder="0"
+                      onChange={(e) => setPartnerB({...partnerB, rent_paid: e.target.value === '' ? '' : Number(e.target.value)})}
                       className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Tax Bracket (%)</label>
-                  <select 
-                    value={partnerB.tax_bracket}
-                    onChange={(e) => setPartnerB({...partnerB, tax_bracket: Number(e.target.value)})}
-                    className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
-                  >
-                    <option value={0}>0%</option>
-                    <option value={5}>5%</option>
-                    <option value={10}>10%</option>
-                    <option value={20}>20%</option>
-                    <option value={30}>30%</option>
-                  </select>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Monthly Income</label>
+                    <input 
+                      type="number" 
+                      value={partnerB.monthly_income}
+                      placeholder="0"
+                      onChange={(e) => setPartnerB({...partnerB, monthly_income: e.target.value === '' ? '' : Number(e.target.value)})}
+                      className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Monthly Expenses</label>
+                    <input 
+                      type="number" 
+                      value={partnerB.monthly_expenses}
+                      placeholder="0"
+                      onChange={(e) => setPartnerB({...partnerB, monthly_expenses: e.target.value === '' ? '' : Number(e.target.value)})}
+                      className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Tax Bracket (%)</label>
+                    <select 
+                      value={partnerB.tax_bracket}
+                      onChange={(e) => setPartnerB({...partnerB, tax_bracket: Number(e.target.value)})}
+                      className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
+                    >
+                      <option value={0}>0%</option>
+                      <option value={5}>5%</option>
+                      <option value={10}>10%</option>
+                      <option value={20}>20%</option>
+                      <option value={30}>30%</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -363,7 +430,8 @@ export default function CouplePlanner() {
                   <input 
                     type="number" 
                     value={partnerB.current_health_cover}
-                    onChange={(e) => setPartnerB({...partnerB, current_health_cover: Number(e.target.value)})}
+                    placeholder="0"
+                    onChange={(e) => setPartnerB({...partnerB, current_health_cover: e.target.value === '' ? '' : Number(e.target.value)})}
                     className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
                   />
                 </div>
@@ -376,7 +444,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerB.savings}
-                        onChange={(e) => setPartnerB({...partnerB, savings: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerB({...partnerB, savings: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -385,7 +454,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerB.mf_value}
-                        onChange={(e) => setPartnerB({...partnerB, mf_value: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerB({...partnerB, mf_value: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -394,7 +464,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerB.pf_balance}
-                        onChange={(e) => setPartnerB({...partnerB, pf_balance: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerB({...partnerB, pf_balance: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -403,7 +474,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerB.nps_balance}
-                        onChange={(e) => setPartnerB({...partnerB, nps_balance: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerB({...partnerB, nps_balance: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -412,7 +484,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerB.property_value}
-                        onChange={(e) => setPartnerB({...partnerB, property_value: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerB({...partnerB, property_value: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -421,7 +494,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerB.gold_value}
-                        onChange={(e) => setPartnerB({...partnerB, gold_value: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerB({...partnerB, gold_value: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -430,7 +504,8 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerB.home_loan_outstanding}
-                        onChange={(e) => setPartnerB({...partnerB, home_loan_outstanding: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerB({...partnerB, home_loan_outstanding: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
@@ -439,13 +514,15 @@ export default function CouplePlanner() {
                       <input 
                         type="number" 
                         value={partnerB.other_loans}
-                        onChange={(e) => setPartnerB({...partnerB, other_loans: Number(e.target.value)})}
+                        placeholder="0"
+                        onChange={(e) => setPartnerB({...partnerB, other_loans: e.target.value === '' ? '' : Number(e.target.value)})}
                         className="w-full bg-white/5 border border-[#4af8e3]/15 rounded-lg px-3 py-2 text-[#ecedf6] font-body text-sm"
                       />
                     </div>
                   </div>
                 </div>
               </div>
+
             </div>
 
           </div>
@@ -461,7 +538,8 @@ export default function CouplePlanner() {
                 <input 
                   type="number" 
                   value={monthlySipTarget}
-                  onChange={(e) => setMonthlySipTarget(Number(e.target.value))}
+                  placeholder="50000"
+                  onChange={(e) => setMonthlySipTarget(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-32 bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body text-right"
                 />
                 <button 

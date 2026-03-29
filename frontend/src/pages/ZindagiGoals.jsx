@@ -18,7 +18,7 @@ function fmtINR(n) {
 export default function ZindagiGoals() {
   const { 
     goals, loading, addZindagiGoal, removeZindagiGoal, setGoals,
-    income, setIncome, expenses, setExpenses, surplus: SURPLUS 
+    income, expenses, surplus: SURPLUS 
   } = useFinance();
 
   const [viewState, setViewState] = useState('list'); // 'list', 'presets', 'customize'
@@ -66,26 +66,20 @@ export default function ZindagiGoals() {
             <p className="text-[#a9abb3] text-lg font-body">Plan for real Indian life goals — not just retirement. Every SIP calculated live from the backend.</p>
           </div>
 
-          {/* Profile bar */}
+          {/* Profile bar - Display only, data from User Profile */}
           <div className="glass-card-static rounded-2xl p-6 mb-8 fade-up">
             <div className="flex flex-col md:flex-row gap-6 mb-6">
               <div className="flex-1 flex flex-col gap-2">
                 <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest">Monthly Income (₹)</label>
-                <input 
-                  type="number" 
-                  value={income}
-                  onChange={(e) => setIncome(Number(e.target.value) || 0)}
-                  className="bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body w-full"
-                />
+                <div className="bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body w-full">
+                  {fmtINR(income)}
+                </div>
               </div>
               <div className="flex-1 flex flex-col gap-2">
                 <label className="text-xs font-label text-[#a9abb3] uppercase tracking-widest">Monthly Expenses (₹)</label>
-                <input 
-                  type="number" 
-                  value={expenses}
-                  onChange={(e) => setExpenses(Number(e.target.value) || 0)}
-                  className="bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body w-full"
-                />
+                <div className="bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body w-full">
+                  {fmtINR(expenses)}
+                </div>
               </div>
             </div>
             <div className="flex justify-between items-center mb-3">
@@ -226,18 +220,20 @@ export default function ZindagiGoals() {
                   <label className="text-[10px] font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Target Amount (₹)</label>
                   <input 
                     type="number" 
-                    value={customizeAmount}
+                    value={customizeAmount === '' ? '' : customizeAmount}
+                    placeholder="0"
                     onChange={(e) => setCustomizeAmount(e.target.value)}
-                    className="rounded-lg px-3"
+                    className="w-full bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
                   />
                 </div>
                 <div>
                   <label className="text-[10px] font-label text-[#a9abb3] uppercase tracking-widest block mb-2">Timeline (Years)</label>
                   <input 
                     type="number" 
-                    value={customizeYears}
+                    value={customizeYears === '' ? '' : customizeYears}
+                    placeholder="0"
                     onChange={(e) => setCustomizeYears(e.target.value)}
-                    className="rounded-lg px-3"
+                    className="w-full bg-white/5 border border-[#c799ff]/15 rounded-xl px-4 py-3 text-[#ecedf6] font-body"
                   />
                 </div>
               </div>

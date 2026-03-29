@@ -12,6 +12,9 @@ export default function PortfolioXRay() {
   const handleFileUpload = async (uploadedFile) => {
     if (!uploadedFile) return;
     
+    // Clear any previous errors
+    setError(null);
+    
     // Cancel any existing upload
     if (uploadController) {
       uploadController.abort();
@@ -23,7 +26,12 @@ export default function PortfolioXRay() {
     const controller = new AbortController();
     setUploadController(controller);
     
-    await uploadXRay(uploadedFile, controller.signal);
+    try {
+      await uploadXRay(uploadedFile, controller.signal);
+    } catch (err) {
+      // Error is already set by uploadXRay
+      console.error('Upload failed:', err);
+    }
     setUploadController(null);
   };
 

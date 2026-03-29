@@ -11,7 +11,8 @@ router = APIRouter(prefix="/chatbot", tags=["chatbot"])
 # GROQ Configuration
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 # Add your Groq API key here or set GROQ_API_KEY env variable
-GROQ_API_KEY = "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"  # Replace with your key from console.groq.com
+import os
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")  # Replace with your key from console.groq.com
 
 # Free tier model options (pick one):
 # - "llama-3.1-8b-instant" (fast, good quality)

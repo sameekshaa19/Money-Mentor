@@ -94,6 +94,17 @@ _SKIP_LINE_TOKENS = {
     "option", "dividend", "cumulative", "growth", "direct", "regular",
     "consolidated", "account", "number", "holdings", "value", "report",
     "generated", "downloaded", "print", "kfintech", "cams", "karvy",
+    # Additional rejects for SBI statements
+    "partner", "life", "mode", "holding", "single", "status", "individual",
+    "second", "holder", "third", "guardian", "nominee", "exchange",
+    "instalment", "installment", "bse", "nse", "partner", "for life",
+    "statement of account", "page", "of", "nav as on", "as on",
+}
+
+# These tokens ALWAYS reject a line, regardless of other content
+_HARD_REJECT_TOKENS = {
+    "statement of account", "option:", "idcw", "payout", 
+    "instruction", "overleaf", "please refer", "growth n", "please"
 }
 
 # Tokens that strongly indicate a real fund name line
@@ -102,6 +113,7 @@ _FUND_KEYWORDS = {
     "direct", "regular", "flexi", "large cap", "mid cap", "small cap",
     "bluechip", "opportunities", "advantage", "emerging", "index",
     "nifty", "sensex", "gilt", "overnight", "arbitrage", "multi cap",
+    "contra", "savings", "sbi", "hdfc", "icici", "axis", "kotak",
 }
 
 
@@ -111,6 +123,11 @@ def _is_fund_name_line(line: str) -> bool:
     Rejects headers, footers, column labels, and numeric-heavy lines.
     """
     lower = line.lower()
+
+    # HARD REJECT: These tokens mean it's definitely NOT a fund name
+    for reject in _HARD_REJECT_TOKENS:
+        if reject in lower:
+            return False
 
     # Must not be a known non-fund token at word level
     words = set(re.findall(r"[a-z]+", lower))
@@ -169,20 +186,20 @@ def _detect_format(full_text: str) -> str:
 # Each pattern yields named groups: date_str, units, nav, amount, txn_type
 # We compile once for performance.
 
-# CAMS: DD-Mon-YYYY  units  nav  amount  type
+# CAMS: DD-Mon-YYYY type amount units nav (SBI format)
 _TXN_CAMS = re.compile(
     r"(?P<date_str>\d{1,2}-[A-Za-z]{3}-\d{4})"
-    r"\s+(?P<units>[\d,]+\.?\d*)"
-    r"\s+(?P<nav>[\d,]+\.?\d*)"
+    r"\s+(?P<txn_type>(?:Systematic Transfer Plan|Switch In|Purchase|Redemption|SIP|SWP|Reinvestment|Switch Out|Buy|Sell|STP|Dividend Reinvest)[^\d]*)"
     r"\s+(?P<amount>[\d,]+\.?\d*)"
-    r"\s+(?P<txn_type>Purchase|Redemption|SIP|SWP|Reinvestment|Switch In|Switch Out|Buy|Sell)",
+    r"\s+(?P<units>[\d,]+\.?\d*)"
+    r"\s+(?P<nav>[\d,]+\.?\d*)",
     re.IGNORECASE,
 )
 
 # KFintech: DD/MM/YYYY  type  amount  units  nav
 _TXN_KFIN = re.compile(
     r"(?P<date_str>\d{1,2}/\d{1,2}/\d{4})"
-    r"\s+(?P<txn_type>Purchase|Redemption|SIP|SWP|Reinvestment|Switch In|Switch Out|Buy|Sell)"
+    r"\s+(?P<txn_type>Purchase|Redemption|SIP|SWP|Reinvestment|Switch In|Switch Out|Buy|Sell|Systematic Transfer Plan|Systematic Transfer|Transfer In|Transfer Out|STP|Dividend Reinvest)"
     r"\s+(?P<amount>[\d,]+\.?\d*)"
     r"\s+(?P<units>[\d,]+\.?\d*)"
     r"\s+(?P<nav>[\d,]+\.?\d*)",
@@ -199,8 +216,19 @@ _TXN_GENERIC = re.compile(
     re.IGNORECASE,
 )
 
-_BUY_KEYWORDS  = {"purchase", "sip", "reinvestment", "switch in", "buy"}
-_SELL_KEYWORDS = {"redemption", "swp", "switch out", "sell"}
+_BUY_KEYWORDS  = {
+    "purchase", "buy",
+    "sip", "systematic investment",
+    "reinvestment", "dividend reinvest",
+    "switch in", "transfer in",
+    "stp in", "systematic transfer plan", "systematic transfer"
+}
+_SELL_KEYWORDS = {
+    "redemption", "sell",
+    "swp", "systematic withdrawal",
+    "switch out", "transfer out",
+    "stp out"
+}
 
 
 def _parse_transaction_line(line: str, fmt: str) -> Optional[Dict]:
@@ -252,8 +280,6 @@ def _parse_transaction_line(line: str, fmt: str) -> Optional[Dict]:
 
     return None
 
-
-# ---------------------------------------------------------------------------
 # Main parser
 # ---------------------------------------------------------------------------
 
@@ -271,46 +297,79 @@ def parse_cams_pdf(file_bytes: bytes) -> List[Dict]:
     """
     transactions: List[Dict] = []
     current_fund: Optional[str] = None
+    debug_lines = []  # Collect sample lines for debugging
 
     try:
         with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+            print(f"[DEBUG] Total pages: {len(pdf.pages)}")
+            
+            # Check which pages have text
+            for i, p in enumerate(pdf.pages[:3]):  # Check first 3 pages
+                txt = p.extract_text()
+                print(f"[DEBUG] Page {i+1} text length: {len(txt) if txt else 0}")
 
             # --- detect format from first page ---
             first_text = pdf.pages[0].extract_text() or ""
             fmt = _detect_format(first_text)
+            print(f"[DEBUG] Detected format: {fmt}")
 
-            for page in pdf.pages:
+            for page_num, page in enumerate(pdf.pages):
                 text = page.extract_text()
                 if not text:
                     continue
+                
+                print(f"[DEBUG] Processing page {page_num + 1}")
 
-                for raw_line in text.split("\n"):
+                for line_num, raw_line in enumerate(text.split("\n")):
                     line = raw_line.strip()
                     if not line or len(line) < 8:
                         continue
+                    
+                    # Collect sample lines for debugging
+                    if page_num == 0 and len(debug_lines) < 50:
+                        debug_lines.append(line)
+                    
+                    # Also specifically capture lines that look like they might be transactions
+                    if re.search(r'\d{1,2}[-/]', line) and re.search(r'\d+\.\d+', line):
+                        print(f"[DEBUG] P{page_num+1} Potential txn: {line[:100]}")
 
                     # ---- Step 1: try to parse as a transaction line ----
-                    # Do this BEFORE fund-name detection so a line that matches
-                    # a transaction is never accidentally treated as a fund name.
                     txn = _parse_transaction_line(line, fmt)
                     if txn is not None and current_fund is not None:
                         txn["fund_name"] = current_fund
                         transactions.append(txn)
-                        continue   # consumed — do not re-examine as fund name
+                        print(f"[DEBUG] Found transaction: {txn['type']} {txn['amount']} in {current_fund}")
+                        continue
 
                     # ---- Step 2: check if this is a new fund header ----
                     if _is_fund_name_line(line):
-                        # Normalise whitespace
                         candidate = re.sub(r"\s+", " ", line).strip()
                         # Strip trailing metadata like "(ISIN: INF123...)"
                         candidate = re.sub(r"\(ISIN[^)]*\)", "", candidate).strip()
+                        # Strip folio references
                         candidate = re.sub(r"\s*-\s*Folio.*$", "", candidate, flags=re.IGNORECASE).strip()
+                        candidate = re.sub(r"\s*-\s*L\d+[A-Z].*$", "", candidate, flags=re.IGNORECASE).strip()
+                        # Strip NAV info
+                        candidate = re.sub(r"\s*NAV\s+as\s+on.*$", "", candidate, flags=re.IGNORECASE).strip()
+                        candidate = re.sub(r"\s*:?\s*\d+\.\d+$", "", candidate).strip()  # trailing NAV number
+                        # Strip exchange/installment info
+                        candidate = re.sub(r"\s*-\s*(BSE|NSE|Exchange).*$", "", candidate, flags=re.IGNORECASE).strip()
+                        candidate = re.sub(r"\s*-\s*Instalment.*$", "", candidate, flags=re.IGNORECASE).strip()
+                        candidate = re.sub(r"\s*-\s*Reg\s+Gr.*$", "", candidate, flags=re.IGNORECASE).strip()
                         if len(candidate) > 8:
+                            # Normalize fund name if it starts with a code like "L036G"
+                            candidate = re.sub(r"^L\d+[A-Z]\s+", "", candidate).strip()
                             current_fund = candidate
+                            print(f"[DEBUG] Found fund: {current_fund}")
 
     except Exception as exc:
         print(f"PDF parsing failed: {exc}. Returning empty transaction list.")
         return []
+    
+    if not transactions:
+        print(f"[DEBUG] No transactions found. Sample lines from PDF:")
+        for i, line in enumerate(debug_lines[:10]):
+            print(f"  Line {i+1}: {line[:80]}...")
 
     return transactions
 

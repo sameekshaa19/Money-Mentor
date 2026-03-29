@@ -9,6 +9,7 @@ import LifeEventAdvisor from './pages/LifeEventAdvisor'
 import CouplePlanner from './pages/CouplePlanner'
 import HealthScore from './pages/HealthScore'
 import Profile from './pages/Profile'
+import ProfileSetup from './pages/ProfileSetup'
 import Login from './pages/Login'
 
 function ProtectedRoute({ children }) {
@@ -106,6 +107,11 @@ export default function App() {
             <Route path="/profile" element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile-setup" element={
+              <ProtectedRoute>
+                <ProfileSetup />
               </ProtectedRoute>
             } />
           </Routes>

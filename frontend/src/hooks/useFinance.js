@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import useAppStore from '../store/useAppStore';
+import useUserProfileStore from '../store/useUserProfileStore';
 
 export default function useFinance() {
+  const { profile } = useUserProfileStore();
   const { 
     goals, setGoals,
     portfolio, setPortfolio,
@@ -16,18 +18,10 @@ export default function useFinance() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Income / Expenses State
-  const [income, setIncomeState] = useState(() => Number(localStorage.getItem('userIncome')) || 120000);
-  const [expenses, setExpensesState] = useState(() => Number(localStorage.getItem('userExpenses')) || 55000);
+  // Income / Expenses State - from user profile (synced from ProfileSetup)
+  const income = profile?.monthlyIncome || 50000;
+  const expenses = profile?.monthlyExpenses || 30000;
   const surplus = income - expenses;
-
-  useEffect(() => {
-    localStorage.setItem('userIncome', income);
-    localStorage.setItem('userExpenses', expenses);
-  }, [income, expenses]);
-
-  const setIncome = (v) => setIncomeState(v);
-  const setExpenses = (v) => setExpensesState(v);
 
   const addZindagiGoal = async (preset, amount, years) => {
     if (!preset || !amount || !years) return;
@@ -82,10 +76,20 @@ export default function useFinance() {
       return response.data;
     } catch (err) {
       console.error('Upload failed:', err);
-      setError(err);
-      if (err.name === 'CanceledError' || err.message?.includes('abort')) {
-        setError({ message: 'Upload cancelled by user' });
+      // Extract backend error message
+      let errorMessage = 'Upload failed';
+      if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.response?.status === 400) {
+        errorMessage = err.response?.data?.detail || 'Invalid file format. Please upload a valid CAMS/KFintech PDF statement.';
+      } else if (err.name === 'CanceledError' || err.message?.includes('abort')) {
+        errorMessage = 'Upload cancelled by user';
+      } else if (err.code === 'ERR_NETWORK') {
+        errorMessage = 'Cannot connect to server. Please ensure the backend is running.';
       }
+      const errorObj = { message: errorMessage, status: err.response?.status };
+      setError(errorObj);
+      throw errorObj;
     } finally {
       setLoading(false);
     }
@@ -113,13 +117,10 @@ export default function useFinance() {
     }
   };
 
-  const analyzeCouple = async (partnerA, partnerB) => {
+  const analyzeCouple = async (data) => {
     setLoading(true);
     try {
-      const res = await api.analyzeCouples({
-        partner_a: partnerA,
-        partner_b: partnerB
-      });
+      const res = await api.analyzeCouples(data);
       setCoupleAnalysis(res.data);
       return res.data;
     } catch (err) {
@@ -132,13 +133,13 @@ export default function useFinance() {
   };
 
   return {
-    loading,
-    error,
-    income, setIncome,
-    expenses, setExpenses,
+    loading, setLoading,
+    error, setError,
+    income,
+    expenses,
     surplus,
     goals, addZindagiGoal, removeZindagiGoal, setGoals,
-    portfolio, uploadXRay,
+    portfolio, uploadXRay, setPortfolio,
     healthScore, setHealthScore,
     fireData, setFireData,
     lifeEvent, setLifeEvent, fetchLifeEventAdvice,
