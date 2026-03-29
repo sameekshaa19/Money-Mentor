@@ -69,7 +69,7 @@ For each goal calculate:
 3. Whether goals conflict (total SIP > available surplus).
 
 Return valid JSON with keys:
-goals (list with sip, progress, status per goal), has_conflict (bool), surplus_needed (number).
+goals (list with sip, progress, status per goal), has_conflict (bool), surplus_needed (number), insight (string with a 1-2 sentence recommendation).
 """
 
 # ────────────────────── Life Events (P3) ──────────────────────

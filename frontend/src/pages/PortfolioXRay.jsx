@@ -1,7 +1,23 @@
 import { useNavigate } from 'react-router-dom';
+import useStore from '../store';
 
 export default function PortfolioXRay() {
   const navigate = useNavigate();
+  const { user, healthScore, firePlan, couplePlan } = useStore();
+
+  const cash = user.emergency_fund || 0;
+  const equity = (user.total_investments || 0) * 0.6;
+  const debt = (user.total_investments || 0) * 0.3;
+  const gold = (user.total_investments || 0) * 0.1;
+  const totalAssets = cash + equity + debt + gold;
+  const totalWealth = totalAssets - (user.total_debt || 0);
+
+  const formatLakhs = (val) => val >= 100000 ? `₹${(val / 100000).toFixed(1)}L` : `₹${Math.round(val).toLocaleString('en-IN')}`;
+
+  const eqPct = totalAssets > 0 ? Math.round((equity / totalAssets) * 100) : 0;
+  const debtPct = totalAssets > 0 ? Math.round((debt / totalAssets) * 100) : 0;
+  const goldPct = totalAssets > 0 ? Math.round((gold / totalAssets) * 100) : 0;
+  const cashPct = totalAssets > 0 ? Math.round((cash / totalAssets) * 100) : 0;
 
   return (
     <div className="section-page active fade-up">
@@ -48,10 +64,10 @@ export default function PortfolioXRay() {
                 <p className="text-[#a9abb3] text-sm font-label">Global Asset Allocation Breakdown</p>
               </div>
               <div className="text-right">
-                <span className="block text-4xl font-headline font-bold text-[#4af8e3] tracking-tight">₹1,48,29,404</span>
+                <span className="block text-4xl font-headline font-bold text-[#4af8e3] tracking-tight">₹{Math.round(totalWealth).toLocaleString('en-IN')}</span>
                 <span className="text-xs font-label text-[#33e9d5] flex items-center justify-end gap-1 font-bold mt-1">
                   <span className="material-symbols-outlined text-sm">trending_up</span>
-                  +12.4% vs last quarter
+                  Live Data Synced
                 </span>
               </div>
             </div>
@@ -72,19 +88,19 @@ export default function PortfolioXRay() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-[#22262f]/30 rounded-xl border border-white/5">
                   <div className="flex items-center gap-2 mb-1"><div className="w-2 h-2 rounded-full bg-[#c799ff]"></div><span className="text-xs font-label font-bold text-[#a9abb3] uppercase">Equity</span></div>
-                  <p className="text-lg font-headline font-bold">60%</p><p className="text-[10px] text-[#a9abb3] font-label">₹88.9L</p>
+                  <p className="text-lg font-headline font-bold">{eqPct}%</p><p className="text-[10px] text-[#a9abb3] font-label">{formatLakhs(equity)}</p>
                 </div>
                 <div className="p-4 bg-[#22262f]/30 rounded-xl border border-white/5">
                   <div className="flex items-center gap-2 mb-1"><div className="w-2 h-2 rounded-full bg-[#4af8e3]"></div><span className="text-xs font-label font-bold text-[#a9abb3] uppercase">Debt</span></div>
-                  <p className="text-lg font-headline font-bold">20%</p><p className="text-[10px] text-[#a9abb3] font-label">₹29.6L</p>
+                  <p className="text-lg font-headline font-bold">{debtPct}%</p><p className="text-[10px] text-[#a9abb3] font-label">{formatLakhs(debt)}</p>
                 </div>
                 <div className="p-4 bg-[#22262f]/30 rounded-xl border border-white/5">
                   <div className="flex items-center gap-2 mb-1"><div className="w-2 h-2 rounded-full bg-[#af7aef]"></div><span className="text-xs font-label font-bold text-[#a9abb3] uppercase">Gold</span></div>
-                  <p className="text-lg font-headline font-bold">10%</p><p className="text-[10px] text-[#a9abb3] font-label">₹14.8L</p>
+                  <p className="text-lg font-headline font-bold">{goldPct}%</p><p className="text-[10px] text-[#a9abb3] font-label">{formatLakhs(gold)}</p>
                 </div>
                 <div className="p-4 bg-[#22262f]/30 rounded-xl border border-white/5">
                   <div className="flex items-center gap-2 mb-1"><div className="w-2 h-2 rounded-full bg-[#73757d]"></div><span className="text-xs font-label font-bold text-[#a9abb3] uppercase">Cash</span></div>
-                  <p className="text-lg font-headline font-bold">10%</p><p className="text-[10px] text-[#a9abb3] font-label">₹14.8L</p>
+                  <p className="text-lg font-headline font-bold">{cashPct}%</p><p className="text-[10px] text-[#a9abb3] font-label">{formatLakhs(cash)}</p>
                 </div>
               </div>
             </div>
@@ -98,13 +114,15 @@ export default function PortfolioXRay() {
                 <circle className="circular-progress-glow" cx="96" cy="96" fill="transparent" r="80" stroke="#c799ff" strokeDasharray="502.4" strokeDashoffset="90" strokeLinecap="round" strokeWidth="12"/>
               </svg>
               <div className="absolute flex flex-col items-center">
-                <span className="font-headline text-6xl font-black text-[#ecedf6]">82</span>
-                <span className="text-[10px] font-black tracking-[0.3em] text-[#c799ff] mt-1 font-label">PERCENTILE</span>
+                <span className="font-headline text-6xl font-black text-[#ecedf6]">{healthScore?.local_scores?.overall_score || '--'}</span>
+                <span className="text-[10px] font-black tracking-[0.3em] text-[#c799ff] mt-1 font-label">SCORE</span>
               </div>
             </div>
             <div className="space-y-2">
-              <span className="px-6 py-2 rounded-full bg-[#c799ff]/20 text-[#c799ff] font-label text-sm font-black border border-[#c799ff]/30 tracking-widest">EXCELLENT</span>
-              <p className="text-xs text-[#a9abb3] px-4 font-body">Your wealth resilience is in the top 18% of similar profiles.</p>
+              <span className="px-6 py-2 rounded-full bg-[#c799ff]/20 text-[#c799ff] font-label text-sm font-black border border-[#c799ff]/30 tracking-widest">
+                {healthScore ? (healthScore.local_scores.overall_score >= 70 ? 'EXCELLENT' : healthScore.local_scores.overall_score >= 40 ? 'FAIR' : 'NEEDS WORK') : 'PENDING'}
+              </span>
+              <p className="text-xs text-[#a9abb3] px-4 font-body">Run your Health Score analysis to keep this updated.</p>
             </div>
           </div>
         </div>
@@ -131,14 +149,14 @@ export default function PortfolioXRay() {
                 <div className="absolute inset-0 bg-gradient-to-r from-[#c799ff] to-[#bc87fe] h-3 rounded-full shadow-[0_0_15px_rgba(199,153,255,0.4)]" style={{ width: '65%' }}></div>
               </div>
               <div className="flex justify-between text-xs font-label font-bold">
-                <div className="flex flex-col"><span className="text-[#a9abb3] uppercase text-[10px]">Current Age</span><span className="text-[#ecedf6] text-base">31</span></div>
-                <div className="flex flex-col items-end"><span className="text-[#c799ff] uppercase text-[10px]">Target Goal</span><span className="text-[#c799ff] text-base">42</span></div>
+                <div className="flex flex-col"><span className="text-[#a9abb3] uppercase text-[10px]">Current Age</span><span className="text-[#ecedf6] text-base">{user.age || '--'}</span></div>
+                <div className="flex flex-col items-end"><span className="text-[#c799ff] uppercase text-[10px]">Target Goal</span><span className="text-[#c799ff] text-base">{firePlan ? firePlan.target_age || '--' : '--'}</span></div>
               </div>
             </div>
           </div>
 
           {/* Couple */}
-          <div className="md:col-span-4 glass-card rounded-2xl p-8 flex flex-col justify-between relative overflow-hidden">
+          <div className="md:col-span-4 glass-card rounded-2xl p-8 flex flex-col justify-between relative overflow-hidden cursor-pointer hover:bg-[#4af8e3]/5" onClick={() => navigate('/couple')}>
             <div className="absolute -top-12 -right-12 w-48 h-48 bg-[#4af8e3]/10 rounded-full blur-3xl"></div>
             <div className="flex justify-between items-center mb-8">
               <div className="flex -space-x-3">

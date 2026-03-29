@@ -14,7 +14,7 @@ async def ask_gemini(prompt: str) -> str:
     """Drop-in replacement — same name, no other files need changing."""
     try:
         response = client.chat.completions.create(
-            model="llama3-8b-8192",
+            model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=1000,
         )

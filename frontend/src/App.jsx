@@ -4,7 +4,7 @@ import PortfolioXRay from './pages/PortfolioXRay'
 import FirePlanner from './pages/FirePlanner'
 import ZindagiGoals from './pages/ZindagiGoals'
 import LifeEventAdvisor from './pages/LifeEventAdvisor'
-import CouplePlanner from './pages/CouplePlanner'
+import Couple from './pages/Couple'
 import HealthScore from './pages/HealthScore'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
@@ -24,7 +24,7 @@ export default function App() {
           <Route path="/" element={<PortfolioXRay />} />
           <Route path="/health" element={<HealthScore />} />
           <Route path="/fire" element={<FirePlanner />} />
-          <Route path="/couple" element={<CouplePlanner />} />
+          <Route path="/couple" element={<Couple />} />
           <Route path="/goals" element={<ZindagiGoals />} />
           <Route path="/life" element={<LifeEventAdvisor />} />
           <Route path="/profile" element={<Profile />} />

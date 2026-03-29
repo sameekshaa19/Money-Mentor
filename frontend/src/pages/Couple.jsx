@@ -13,6 +13,50 @@ const INITIAL_PARTNER = {
   nps_contribution: 50000, insurance_cover: 2000000, total_investments: 500000
 };
 
+const PartnerForm = ({ data, setData, label }) => (
+  <Card title={label} className="glass-card text-[#ecedf6] border-none">
+    <div className="space-y-4">
+      <div>
+        <label className="text-xs font-bold text-[#a9abb3] block mb-1">Annual Income (₹)</label>
+        <input 
+          type="number" value={data.annual_income} 
+          onChange={(e) => setData({...data, annual_income: e.target.value === '' ? '' : Number(e.target.value)})}
+          className="w-full bg-[#161a21] text-[#ecedf6] p-2 rounded border border-[#22262f] font-bold outline-none focus:border-[#4af8e3]"
+        />
+      </div>
+      <div>
+        <label className="text-xs font-bold text-[#a9abb3] block mb-1">Monthly Rent Paid (₹)</label>
+        <input 
+          type="number" value={data.rent_paid} 
+          onChange={(e) => setData({...data, rent_paid: e.target.value === '' ? '' : Number(e.target.value)})}
+          className="w-full bg-[#161a21] text-[#ecedf6] p-2 rounded border border-[#22262f] font-bold outline-none focus:border-[#4af8e3]"
+        />
+      </div>
+      <div className="flex gap-4">
+         <div className="flex-1">
+           <label className="text-xs font-bold text-[#a9abb3] block mb-1">Tax Regime</label>
+           <select 
+             value={data.tax_regime} 
+             onChange={(e) => setData({...data, tax_regime: e.target.value})}
+             className="w-full bg-[#161a21] text-[#ecedf6] p-2 rounded border border-[#22262f] text-sm outline-none focus:border-[#4af8e3]"
+           >
+             <option value="new">New Regime</option>
+             <option value="old">Old Regime</option>
+           </select>
+         </div>
+         <div className="flex-1">
+           <label className="text-xs font-bold text-[#a9abb3] block mb-1">NPS (80CCD)</label>
+           <input 
+             type="number" value={data.nps_contribution} 
+             onChange={(e) => setData({...data, nps_contribution: e.target.value === '' ? '' : Number(e.target.value)})}
+             className="w-full bg-[#161a21] text-[#ecedf6] p-2 rounded border border-[#22262f] font-bold outline-none focus:border-[#4af8e3]"
+           />
+         </div>
+      </div>
+    </div>
+  </Card>
+);
+
 export default function Couple() {
   const { couplePlan, setCouplePlan } = useStore();
   const [partnerA, setPartnerA] = useState({ ...INITIAL_PARTNER, name: 'Partner One' });
@@ -33,58 +77,16 @@ export default function Couple() {
 
   if (loading) return <Loader message="Optimizing joint taxes & HRA exemption splits..." />;
 
-  const PartnerForm = ({ data, setData, label }) => (
-    <Card title={label} className="bg-white">
-      <div className="space-y-4">
-        <div>
-          <label className="text-xs font-bold text-slate-400 block mb-1">Annual Income (₹)</label>
-          <input 
-            type="number" value={data.annual_income} 
-            onChange={(e) => setData({...data, annual_income: Number(e.target.value)})}
-            className="w-full bg-slate-50 p-2 rounded border-none font-bold"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-bold text-slate-400 block mb-1">Monthly Rent Paid (₹)</label>
-          <input 
-            type="number" value={data.rent_paid} 
-            onChange={(e) => setData({...data, rent_paid: Number(e.target.value)})}
-            className="w-full bg-slate-50 p-2 rounded border-none font-bold"
-          />
-        </div>
-        <div className="flex gap-4">
-           <div className="flex-1">
-             <label className="text-xs font-bold text-slate-400 block mb-1">Tax Regime</label>
-             <select 
-               value={data.tax_regime} 
-               onChange={(e) => setData({...data, tax_regime: e.target.value})}
-               className="w-full bg-slate-50 p-2 rounded border-none text-sm"
-             >
-               <option value="new">New Regime</option>
-               <option value="old">Old Regime</option>
-             </select>
-           </div>
-           <div className="flex-1">
-             <label className="text-xs font-bold text-slate-400 block mb-1">NPS (80CCD)</label>
-             <input 
-               type="number" value={data.nps_contribution} 
-               onChange={(e) => setData({...data, nps_contribution: Number(e.target.value)})}
-               className="w-full bg-slate-50 p-2 rounded border-none"
-             />
-           </div>
-        </div>
-      </div>
-    </Card>
-  );
-
   return (
     <div className="max-w-6xl mx-auto">
-      <header className="mb-10 flex justify-between items-center">
+      <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">Couple Finance Optimizer</h1>
-          <p className="text-slate-500">Combine forces! Optimize taxes, insurance, and investments as a household.</p>
+          <h1 className="text-4xl font-headline font-bold text-[#ecedf6] mb-2">Couple Finance Optimizer</h1>
+          <p className="text-[#a9abb3] font-body">Combine forces! Optimize taxes, insurance, and investments as a household.</p>
         </div>
-        <Button variant="secondary" className="px-10" onClick={handleOptimize}>Optimize Jointly</Button>
+        <button className="px-8 py-3 bg-gradient-to-r from-[#4af8e3] to-[#33e9d5] text-[#0b0e14] rounded-full font-headline font-bold hover:shadow-[0_0_20px_rgba(74,248,227,0.4)] transition-all cursor-pointer" onClick={handleOptimize}>
+          Optimize Jointly
+        </button>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">

@@ -87,7 +87,12 @@ export default function ZindagiGoals() {
         monthly_surplus: SURPLUS
       });
       monthlySIP = Math.round(res.data.data.goals[0].monthly_sip);
-      aiInsight = res.data.data.ai_insights || null;
+      const aiData = res.data.data.ai_insights;
+      if (aiData) {
+        aiInsight = aiData.insight || aiData.message || JSON.stringify(aiData);
+      } else {
+        aiInsight = null;
+      }
     } catch(e) {
       console.error('API failed, using estimate', e);
       monthlySIP = Math.round(amount / (years * 12));
